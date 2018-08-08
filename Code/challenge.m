@@ -10,7 +10,6 @@ members = {'Julia Stroebel','Oliver Koege','Andre Thommessen','Tim Janßen','Seba
 
 % Email-Adress (from Moodle!):
 % mail = {'ga99abc@tum.de', 'daten.hannes@tum.de'};
-
 mail = {'sebastian.huegler@tum.de','andrethom@hotmail.de','julia.stroebel@tum.de'};
 
 %% Load images
