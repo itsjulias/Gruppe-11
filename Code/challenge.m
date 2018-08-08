@@ -10,7 +10,7 @@ members = {'Julia Stroebel','Oliver Koege','Andre Thommessen','Tim Janßen','Seba
 
 % Email-Adress (from Moodle!):
 % mail = {'ga99abc@tum.de', 'daten.hannes@tum.de'};
-mail = {'sebastian.huegler@tum.de'};
+mail = {'julia.stroebel@tum.de','sebastian.huegler@tum.de'};
 
 %% Load images
 img1 = imread([pwd '/img/L2.jpg']);
