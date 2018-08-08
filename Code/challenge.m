@@ -5,10 +5,11 @@ clear all;
 group_number = 11;
 
 % Groupmembers:
-members = {'Julia Stroebel','Oliver Koege','Andre Thommessen','Tim Janßen','Sebastian Huegler'};
+members = {'Julia Stroebel','Oliver Doege','Andre Thommessen','Tim Janßen','Sebastian Huegler'};
 
 % Email-Adress (from Moodle!):
-mail = {'sebastian.huegler@tum.de','andrethom@hotmail.de','julia.stroebel@tum.de'};
+mail = {'sebastian.huegler@tum.de','andrethom@hotmail.de','julia.stroebel@tum.de', 'oliver.doege@tum.de'};
+
 
 %% Load images
 img1 = imread([pwd '/img/L2.jpg']);
