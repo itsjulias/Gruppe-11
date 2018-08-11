@@ -7,7 +7,6 @@ clear all;
 group_number = 11;
 
 % Groupmembers:
-<<<<<<< HEAD
 members = {'Julia Stroebel','Oliver Doege','Andre Thommessen','Tim Janßen',...
            'Sebastian Huegler'};
 
@@ -17,12 +16,7 @@ mail = {'sebastian.huegler@tum.de',...
         'julia.stroebel@tum.de',...
         'oliver.doege@tum.de',...
         'tim.janßen@tum.de'};
-=======
-members = {'Julia Stroebel','Oliver Doege','Andre Thommessen','Tim Janßen','Sebastian Huegler'};
 
-% Email-Adress (from Moodle!):
-mail = {'sebastian.huegler@tum.de','andrethom@hotmail.de','julia.stroebel@tum.de', 'oliver.doege@tum.de'};
->>>>>>> 9f86f03820a9432a456a227658f5112a1bc0b3a3
 
 
 %% Load images
