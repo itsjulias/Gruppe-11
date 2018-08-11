@@ -1,4 +1,12 @@
-function [T_cell, R_cell,T,R, d_cell, x1, x2] = rekonstruktion(T1, T2, R1, R2, Korrespondenzen, K)
+function [T_cell, R_cell,T,R, d_cell, x1, x2] = rekonstruktion(T1, T2, R1, R2, Korrespondenzen, K, varargin)
+%% Input parser
+p = inputParser;
+valid_do_plot = @(x) islogical(x);
+addOptional(p,'do_plot',false,valid_do_plot);
+
+parse(p, varargin{:});
+do_plot = p.Results.do_plot;
+
 %% Preparation
 T_cell = {T1, T2, T1, T2};
 R_cell = {R1, R1, R2, R2};
@@ -35,26 +43,39 @@ T = T_cell{idx};
 R = R_cell{idx};
 lambda = d_cell{idx};
 
-%Plotten der Raumpunkte
-P1 = lambda(:,1)'.*x1;
-figure
-scatter3(P1(1,:),P1(2,:),P1(3,:),'.');
-hold all;
-text(P1(1,:),P1(2,:),P1(3,:),num2str((1:length(P1(1,:)))'))
 
 
-%Berechnung der Kamera-frames/Plotting
-camC1 = [[-0.2;0.2;1],[0.2;0.2;1],[0.2;-0.2;1],[-0.2;-0.2;1]];
-camC2 = R\(camC1-T);
-plot3([camC1(1,:) camC1(1,1)],[camC1(2,:) camC1(2,1)],[camC1(3,:) camC1(3,1)],'b');
-text(camC1(1,end),camC1(2,end),camC1(3,end),'Cam1');
-plot3([camC2(1,:) camC2(1,1)],[camC2(2,:) camC2(2,1)],[camC2(3,:) camC2(3,1)],'r');
-text(camC2(1,end),camC2(2,end),camC2(3,end),'Cam2');
-xlabel('X'); ylabel('Y'); zlabel('Z');
-% xlim([-0.6 1]); zlim([0 5]);
 
-camup([0 -1 0])
-campos([43 -22 -87])
 
-grid on
+
+if(do_plot)
+    % Plotten der Raumpunkte
+    P1 = lambda(:,1)'.*x1;
+    figure
+    scatter3(P1(1,:),P1(2,:),P1(3,:),'.');
+    hold all;
+    text(P1(1,:),P1(2,:),P1(3,:),num2str((1:length(P1(1,:)))'))
+    %Berechnung der Kamera-frames/Plotting
+    camC1 = [[-0.2;0.2;1],[0.2;0.2;1],[0.2;-0.2;1],[-0.2;-0.2;1]];
+    camC2 = R\(camC1-T);
+    plot3([camC1(1,:) camC1(1,1)],[camC1(2,:) camC1(2,1)],[camC1(3,:) camC1(3,1)],'b');
+    text(camC1(1,end),camC1(2,end),camC1(3,end),'Cam1');
+    plot3([camC2(1,:) camC2(1,1)],[camC2(2,:) camC2(2,1)],[camC2(3,:) camC2(3,1)],'r');
+    text(camC2(1,end),camC2(2,end),camC2(3,end),'Cam2');
+    xlabel('X'); ylabel('Y'); zlabel('Z');
+    % xlim([-0.6 1]); zlim([0 5]);
+    % Plotten der Kameraframes
+    figure
+    plot3([camC1(1,:) camC1(1,1)],[camC1(2,:) camC1(2,1)],[camC1(3,:) camC1(3,1)],'b');
+    text(camC1(1,end),camC1(2,end),camC1(3,end),'Cam1');
+    hold all
+    plot3([camC2(1,:) camC2(1,1)],[camC2(2,:) camC2(2,1)],[camC2(3,:) camC2(3,1)],'r');
+    xlabel('X'); ylabel('Y'); zlabel('Z');
+    axis equal
+    grid
+    
+    camup([0 -1 0])
+    campos([43 -22 -87])
+    grid on
+end
 end

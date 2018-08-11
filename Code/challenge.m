@@ -1,18 +1,22 @@
 %% Computer Vision Challenge
 close all;
 clear all;
+%% Pre-Conditions - Variablen um Zwischenplots w‰hrend Entwicklungsphase anzuschauen
+
 % Groupnumber:
 group_number = 11;
 
 % Groupmembers:
-% members = {'Max Mustermann', 'Johannes Daten'};
-members = {'Julia Stroebel','Oliver Koege','Andre Thommessen','Tim Janﬂen','Sebastian Huegler'};
+members = {'Julia Stroebel','Oliver Doege','Andre Thommessen','Tim Janﬂen',...
+           'Sebastian Huegler'};
 
 % Email-Adress (from Moodle!):
-% mail = {'ga99abc@tum.de', 'daten.hannes@tum.de'};
-<<<<<<< HEAD
-mail = {'julia.stroebel@tum.de','sebastian.huegler@tum.de'};
-mail = {'sebastian.huegler@tum.de','andrethom@hotmail.de'};
+mail = {'sebastian.huegler@tum.de',...
+        'andrethom@hotmail.de',...
+        'julia.stroebel@tum.de',...
+        'oliver.doege@tum.de',...
+        'tim.janﬂen@tum.de'};
+
 
 %% Load images
 img1 = imread([pwd '/img/L2.jpg']);

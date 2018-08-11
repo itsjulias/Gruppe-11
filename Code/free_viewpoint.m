@@ -1,12 +1,7 @@
 function [output_image]  = free_viewpoint(image1, image2, p)
 % This function generates an image from a virtual viewpoint between two
 % real images. The output image has the same size as the input images.
-
-%% Pre-Conditions - Variablen um Zwischenplots während Entwicklungsphase anzuschauen
-% TO BE REMOVED !!!
-devMode = true;
-
-
+devMode =true;
 %% Algorithmus
 %% Umwandlung der Bilder in Graubilder
 IGray1 = rgb_to_gray(image1);
@@ -42,19 +37,27 @@ end
 %% Berechne die Essentielle Matrix
 % Kamerakalibrierungsmatrix ist in KK.mat enthalten und wurde mit in der
 % Video-Vorlesung angegebenen Toolbox bestimmt.
-load('KK.mat');
-K = KK;
+load('calib_K.mat');
+K = K;
 
 E = achtpunktalgorithmus(Korrespondenzen_robust,K);
+F = achtpunktalgorithmus(Korrespondenzen_robust);
 disp(E);
+disp(F);
 [T1, R1, T2, R2, U, V] = TR_aus_E(E);
 
-[T_cell, R_cell,T,R, d_cell, x1, x2] = rekonstruktion(T1, T2, R1, R2, Korrespondenzen_robust, K);
+[T_cell, R_cell,T,R, d_cell, x1, x2] = ...
+    rekonstruktion(T1, T2, R1, R2, Korrespondenzen_robust, K);
 
 
 %% Bildrektifizierungsalgorithmus
-% FUNKTIONIERT NOCH NICHT RICHTIG !!!
-rectification(IGray1,IGray2,T,K,R);
+% FUNKTIONIERT NOCH NICHT RICHTIG FÜR bilder R1 und L1 !!!
+[img1_rectified, img2_rectified, Tr1, Tr2] = ...
+    rectification(IGray1,IGray2,K,T,R,'do_plot',devMode);
+
+%% Disparitätsermittling
+[disparty_map] = ...
+    disparity_estimation(img1_rectified,img2_rectified,'do_plot',devMode);
 
 %% Ausgabe des Free-Viewpoint Bildes
 output_image = uint8(p*image1+(1-p)*image2);
