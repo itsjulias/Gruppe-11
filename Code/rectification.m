@@ -13,10 +13,13 @@ function [img_L_r, img_R_r, TL, TR] = rectification (img1, img2,K,T,R,varargin)
 %% Input parser
 p = inputParser;
 valid_do_plot = @(x) islogical(x);
+valid_size_frame = @(x) strcmp(x,'full') | strcmp(x,'valid');
 addOptional(p,'do_plot',false,valid_do_plot);
+addOptional(p,'size_frame','full',valid_size_frame);
 
 parse(p, varargin{:});
 do_plot = p.Results.do_plot;
+size_frame = p.Results.size_frame;
 
 
 %% Rectification Algorithum (von Paper Fusiello)
@@ -75,28 +78,41 @@ corners_L_r = TL*[0, size_L_x,size_L_x, 0;
     ones(1,4)]; % es wird der Koordinatenursprung links oben gesetzt, da TL und TR von kalibrierten Koordinaten ausgehen
 % Andre: TL und TR gehen von Pixelkoordinaten, also unkalibrierten
 % Koordinaten aus!?
-% Normalisierung der z-Komponente auf eins.
-corners_L_r = corners_L_r./corners_L_r(3,:);
+corners_L_r = corners_L_r./corners_L_r(3,:);% Normalisierung der z-Komponente auf eins.
 
 corners_R_r = TR*[0, size_L_x,size_L_x,0;
     size_L_y, size_L_y,0,0;
     ones(1,4)];
-corners_R_r = corners_R_r./corners_R_r(3,:);
+corners_R_r = corners_R_r./corners_R_r(3,:);% Normalisierung der z-Komponente auf eins.
 
 % Der Bildausschnitt, der nun beide Bilder enthält, wird nun ermittelt
-max_L_xy = max(ceil(corners_L_r(1:2,:)),[],2);
-min_L_xy = min(floor(corners_L_r(1:2,:)),[],2);
-
-max_R_xy = max(ceil(corners_R_r(1:2,:)),[],2);
-min_R_xy = min(floor(corners_R_r(1:2,:)),[],2);
-
-max_LR_xy = max(max_L_xy,max_R_xy);
-min_LR_xy = min(min_L_xy,min_R_xy);
+if(strcmp(size_frame,'full'))
+    max_L_xy = max(ceil(corners_L_r(1:2,:)),[],2);
+    min_L_xy = min(floor(corners_L_r(1:2,:)),[],2);
+    
+    max_R_xy = max(ceil(corners_R_r(1:2,:)),[],2);
+    min_R_xy = min(floor(corners_R_r(1:2,:)),[],2);
+    
+    max_LR_xy = max(max_L_xy,max_R_xy);
+    min_LR_xy = min(min_L_xy,min_R_xy);
+elseif(strcmp(size_frame,'valid')) 
+    % Zusammenfügen der corners (corners_L_r und corners_R_r) und
+    % darauffolgendes sortieren der x- und y-Werte nach aufsteigender
+    % Reihenfolge. Die größte links/oben liegende x-/y-Koordinate befindet
+    % sich dann bei rechteckigen Bildern an Position 4. Die kleinste
+    % rechts/unten liegenden x-/y-Koordinate befindet sich dann an Position
+    % 5 der sortierten Koordinaten.
+    
+    corners_x_sorted = sort([corners_L_r(1,:), corners_R_r(1,:)]);
+    corners_y_sorted = sort([corners_L_r(2,:), corners_R_r(2,:)]);
+    min_LR_xy = ceil([corners_x_sorted(4); corners_y_sorted(4)]);
+    max_LR_xy = floor([corners_x_sorted(5); corners_y_sorted(5)]);
+end
 
 
 frame = [min_LR_xy(1), max_LR_xy(1), max_LR_xy(1), min_LR_xy(1);
-    max_LR_xy(2), max_LR_xy(2), min_LR_xy(2), min_LR_xy(2);
-    ones(1,4)]; %Ecke [links o., rechts o., rechts u., links.u.]
+         max_LR_xy(2), max_LR_xy(2), min_LR_xy(2), min_LR_xy(2);
+         ones(1,4)]; %Ecke [links o., rechts o., rechts u., links.u.]
 
 % Beide Bilder sollen die gleiche Größe haben,
 % Um interpolieren zu können wird ein meshgrid benötigt, das
