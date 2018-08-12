@@ -19,8 +19,8 @@ mail = {'sebastian.huegler@tum.de',...
 
 
 %% Load images
-img1 = imread([pwd '/img/L1.jpg']);
-img2 = imread([pwd '/img/R1.jpg']);
+img1 = imread([pwd '/img/L2.jpg']);
+img2 = imread([pwd '/img/R2.jpg']);
 
 %% Free Viewpoint Rendering
 % start execution timer -> tic;

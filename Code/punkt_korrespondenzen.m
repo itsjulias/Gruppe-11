@@ -24,7 +24,8 @@ function Korrespondenzen = punkt_korrespondenzen(I1,I2,Mpt1,Mpt2,varargin)
     [length_y_im1, length_x_im1] = size(Im1);
     [length_y_im2, length_x_im2] = size(Im2);
     
-
+    % Alle Merkmalspunkte, die zu nahe am Rand liegen werden nicht
+    % berücksichtigt/entfernt
     Mpt1 = Mpt1(:,(Mpt1(1,:)+floor(window_length/2)<=length_x_im1) & (Mpt1(1,:)-floor(window_length/2)>=1)...
                   & (Mpt1(2,:)+floor(window_length/2)<=length_y_im1) & (Mpt1(2,:)-floor(window_length/2)>=1));
     Mpt2 = Mpt2(:,(Mpt2(1,:)+floor(window_length/2)<=length_x_im2) & (Mpt2(1,:)-floor(window_length/2)>=1)...
