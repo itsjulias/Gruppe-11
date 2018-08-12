@@ -66,8 +66,8 @@ disp('-------------rectification--------------')
 %% Disparitätsermittling
 disp('---------disparity estimation-----------')
 
-[disparty_map] = ...
-    disparity_estimation(img1_rectified,img2_rectified,'do_plot',devMode);
+[depth_map] = ...
+    depth_estimation(img1_rectified,img2_rectified,'do_plot',devMode);
 
 
 %% Ausgabe des Free-Viewpoint Bildes
