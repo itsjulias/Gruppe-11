@@ -62,17 +62,13 @@ disp('-------------rectification--------------')
 [img1_rectified, img2_rectified, Tr1, Tr2] = ...
     rectification(IGray1,IGray2,K,T,R,'do_plot',devMode,'size_frame','valid');
 
-<<<<<<< HEAD
-% %% Disparitätsermittling
-% [disparty_map] = ...
-%     disparity_estimation(img1_rectified,img2_rectified,'do_plot',devMode);
-=======
+
 %% Disparitätsermittling
 disp('---------disparity estimation-----------')
 
 [disparty_map] = ...
     disparity_estimation(img1_rectified,img2_rectified,'do_plot',devMode);
->>>>>>> fbb55930ccd4493226d3fd316a487d8710802aa2
+
 
 %% Ausgabe des Free-Viewpoint Bildes
 output_image = uint8(p*image1+(1-p)*image2);
