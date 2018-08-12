@@ -47,7 +47,7 @@ disp(F);
 [T1, R1, T2, R2, U, V] = TR_aus_E(E);
 
 [T_cell, R_cell,T,R, d_cell, x1, x2] = ...
-    rekonstruktion(T1, T2, R1, R2, Korrespondenzen_robust, K);
+    rekonstruktion(T1, T2, R1, R2, Korrespondenzen_robust, K)
 
 
 %% Bildrektifizierungsalgorithmus

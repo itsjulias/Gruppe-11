@@ -13,10 +13,7 @@ function [img_L_r, img_R_r, TL, TR] = rectification (img1, img2,K,T,R,varargin)
 %% Input parser
 p = inputParser;
 valid_do_plot = @(x) islogical(x);
-valid_F = @(x) size(F,1) == 3 & size(F,2) ==3;
 addOptional(p,'do_plot',false,valid_do_plot);
-addOptional(p,'F',zeros(0,0),valid_F);
-addOptional(p,'E',zeros(0,0),valid_F);
 
 parse(p, varargin{:});
 do_plot = p.Results.do_plot;
@@ -45,9 +42,17 @@ center_R_r = TR*center_R;
 
 % Vertikaler Versatz der begradigten Bilder (Y-Achse) soll nun gleich
 % sein, bzw. Bilder sollen vertikal auf gleicher Höhe liegen.
+% Andre: Kein vertikales Versatz (in y-Richtung) vorhanden => Siehe
+% berechnetes T = [-1; 0; 0]
+% Code trotzdem sinnvoll, um auf z=1 zu normieren und optische Achse in
+% x-Richtung zu zentrieren
 dL = center_L(1:2) - center_L_r(1:2)./center_L_r(3);
 dR = center_R(1:2) - center_R_r(1:2)./center_R_r(3);
-dL(2) = dR(2);
+% Andre: Nicht nötig da kein vertikaler Versatz in (y-Richtung): T =
+% [-1;0;0]
+% bzw. falsch, da y-Komponente falsch normiert / nicht auf z=1 normiert
+% wird.
+%dL(2) = dR(2);
 [TL, TR] = rectify_fusiello(Po1,Po2,K,dL,dR);
 
 TL_inv = inv(TL);
@@ -68,8 +73,11 @@ TR_inv = inv(TR);
 corners_L_r = TL*[0, size_L_x,size_L_x, 0;
     size_L_y, size_L_y, 0, 0;
     ones(1,4)]; % es wird der Koordinatenursprung links oben gesetzt, da TL und TR von kalibrierten Koordinaten ausgehen
-
+% Andre: TL und TR gehen von Pixelkoordinaten, also unkalibrierten
+% Koordinaten aus!?
+% Normalisierung der z-Komponente auf eins.
 corners_L_r = corners_L_r./corners_L_r(3,:);
+
 corners_R_r = TR*[0, size_L_x,size_L_x,0;
     size_L_y, size_L_y,0,0;
     ones(1,4)];
