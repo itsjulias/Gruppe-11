@@ -11,6 +11,7 @@ end
 % im unkalibrierten Fall T durch T' = K*T ersetzen.
 % c1 berechnen unnötig, da gleich 0?
 c1 = -inv(PoL(:,1:3))*PoL(:,4); % is equal to (0,0,0)
+% Epipol e1
 c2 = -inv(PoR(:,1:3))*PoR(:,4); % is equal to -R'*T
 
 v1 = (c2-c1); % new x-axis along translation vector
