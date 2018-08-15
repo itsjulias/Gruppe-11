@@ -51,11 +51,13 @@ center_R_r = TR*center_R;
 % x-Richtung zu zentrieren
 dL = center_L(1:2) - center_L_r(1:2)./center_L_r(3);
 dR = center_R(1:2) - center_R_r(1:2)./center_R_r(3);
+dL(1) = 0;
+dR(1) = 0;
 % Andre: Nicht nötig da kein vertikaler Versatz in (y-Richtung): T =
 % [-1;0;0]
 % bzw. falsch, da y-Komponente falsch normiert / nicht auf z=1 normiert
 % wird.
-%dL(2) = dR(2);
+% dL(1) = dR(1);
 [TL, TR] = rectify_fusiello(Po1,Po2,K,dL,dR);
 
 TL_inv = inv(TL);
