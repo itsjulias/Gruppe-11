@@ -1,4 +1,4 @@
-function [img_L_r, img_R_r, TL, TR] = rectification (img1, img2,K,T,R,varargin)
+function [img_L_r, img_R_r, TL, TR, offset_x] = rectification (img1, img2,K,T,R,varargin)
 % This function rectifies the gray images img1 and img2. The parameters,
 % which must be given are EF (essential or fundamental matrix) and if EF is
 % the essential matrix a camera calibratrion matrix K. Furthermore the
@@ -13,7 +13,7 @@ function [img_L_r, img_R_r, TL, TR] = rectification (img1, img2,K,T,R,varargin)
 %% Input parser
 p = inputParser;
 valid_do_plot = @(x) islogical(x);
-valid_size_frame = @(x) strcmp(x,'full') | strcmp(x,'valid');
+valid_size_frame = @(x) strcmp(x,'full') | strcmp(x,'valid') | strcmp(x,'valid_offset');
 addOptional(p,'do_plot',false,valid_do_plot);
 addOptional(p,'size_frame','full',valid_size_frame);
 
@@ -89,41 +89,67 @@ corners_R_r = corners_R_r./corners_R_r(3,:);% Normalisierung der z-Komponente au
 
 % Der Bildausschnitt, der nun beide Bilder enthält, wird nun ermittelt
 if(strcmp(size_frame,'full'))
-    max_L_xy = max(ceil(corners_L_r(1:2,:)),[],2);
-    min_L_xy = min(floor(corners_L_r(1:2,:)),[],2);
+    %
+    h_max_L_xy = max(ceil(corners_L_r(1:2,:)),[],2);
+    h_min_L_xy = min(floor(corners_L_r(1:2,:)),[],2);
     
-    max_R_xy = max(ceil(corners_R_r(1:2,:)),[],2);
-    min_R_xy = min(floor(corners_R_r(1:2,:)),[],2);
+    h_max_R_xy = max(ceil(corners_R_r(1:2,:)),[],2);
+    h_min_R_xy = min(floor(corners_R_r(1:2,:)),[],2);
     
-    max_LR_xy = max(max_L_xy,max_R_xy);
-    min_LR_xy = min(min_L_xy,min_R_xy);
+    max_L_xy = max(h_max_L_xy,h_max_R_xy);
+    min_L_xy = min(h_min_L_xy,h_min_R_xy);
+    max_R_xy = max(h_max_L_xy,h_max_R_xy);
+    min_R_xy = min(h_min_L_xy,h_min_R_xy);
+    
+    offset_x = 0;
 elseif(strcmp(size_frame,'valid')) 
     % Zusammenfügen der corners (corners_L_r und corners_R_r) und
     % darauffolgendes sortieren der x- und y-Werte nach aufsteigender
     % Reihenfolge. Die größte links/oben liegende x-/y-Koordinate befindet
     % sich dann bei rechteckigen Bildern an Position 4. Die kleinste
     % rechts/unten liegenden x-/y-Koordinate befindet sich dann an Position
-    % 5 der sortierten Koordinaten.
+    % 5 der sortierten Koordinaten.  
+    corners_LR_x_sorted = sort([corners_L_r(1,:), corners_R_r(1,:)]);
+    corners_LR_y_sorted = sort([corners_L_r(2,:), corners_R_r(2,:)]);
     
-    corners_x_sorted = sort([corners_L_r(1,:), corners_R_r(1,:)]);
-    corners_y_sorted = sort([corners_L_r(2,:), corners_R_r(2,:)]);
-    min_LR_xy = ceil([corners_x_sorted(4); corners_y_sorted(4)]);
-    max_LR_xy = floor([corners_x_sorted(5); corners_y_sorted(5)]);
+    max_L_xy = floor([corners_LR_x_sorted(5); corners_LR_y_sorted(5)]);
+    min_L_xy = ceil([corners_LR_x_sorted(4); corners_LR_y_sorted(4)]);
+    max_R_xy = floor([corners_LR_x_sorted(5); corners_LR_y_sorted(5)]);
+    min_R_xy = ceil([corners_LR_x_sorted(4); corners_LR_y_sorted(4)]);
+    
+    offset_x = 0;
+    
+elseif(strcmp(size_frame,'valid_offset'))
+    corners_L_x_sorted = sort(corners_L_r(1,:));
+    corners_R_x_sorted = sort(corners_R_r(1,:));
+    corners_LR_y_sorted = sort([corners_L_r(2,:), corners_R_r(2,:)]);
+    
+    offset_x = ceil(corners_L_x_sorted(2))-ceil(corners_R_x_sorted(2));
+    max_L_xy(1) = floor(corners_L_x_sorted(3));
+    min_L_xy(1) = ceil(corners_L_x_sorted(2));
+    max_R_xy(1) = floor(corners_R_x_sorted(3));
+    min_R_xy(1) = ceil(corners_R_x_sorted(2));
+    max_L_xy(2) = floor(corners_LR_y_sorted(5));
+    min_L_xy(2) = ceil(corners_LR_y_sorted(4));
+    max_R_xy(2) = floor(corners_LR_y_sorted(5));
+    min_R_xy(2) = ceil(corners_LR_y_sorted(4));
+    
+    
 end
 
 
-frame = [min_LR_xy(1), max_LR_xy(1), max_LR_xy(1), min_LR_xy(1);
-         max_LR_xy(2), max_LR_xy(2), min_LR_xy(2), min_LR_xy(2);
-         ones(1,4)]; %Ecke [links o., rechts o., rechts u., links.u.]
+% frame = [min_LR_xy(1), max_LR_xy(1), max_LR_xy(1), min_LR_xy(1);
+%          max_LR_xy(2), max_LR_xy(2), min_LR_xy(2), min_LR_xy(2);
+%          ones(1,4)]; %Ecke [links o., rechts o., rechts u., links.u.]
 
 % Beide Bilder sollen die gleiche Größe haben,
 % Um interpolieren zu können wird ein meshgrid benötigt, das
 % zurücktransformiert werden kann
-[meshX_L_r,meshY_L_r] = meshgrid(min_LR_xy(1):max_LR_xy(1)-1,...
-    min_LR_xy(2):max_LR_xy(2)-1);
+[meshX_L_r,meshY_L_r] = meshgrid(min_L_xy(1):max_L_xy(1)-1,...
+    min_L_xy(2):max_L_xy(2)-1);
 meshZ_L_r = ones(size(meshX_L_r));
-[meshX_R_r,meshY_R_r] = meshgrid(min_LR_xy(1):max_LR_xy(1)-1,...
-    min_LR_xy(2):max_LR_xy(2)-1);
+[meshX_R_r,meshY_R_r] = meshgrid(min_R_xy(1):max_R_xy(1)-1,...
+    min_R_xy(2):max_R_xy(2)-1);
 meshZ_R_r = ones(size(meshX_R_r));
 
 % Rücktransformation der Meshgrids zur Interpolation

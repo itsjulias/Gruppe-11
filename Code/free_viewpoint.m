@@ -59,8 +59,8 @@ E = achtpunktalgorithmus(Korrespondenzen_robust,K);
 
 %% Bildrektifizierungsalgorithmus
 disp('-------------rectification--------------')
-[img1_rectified, img2_rectified, Tr1, Tr2] = ...
-    rectification(IGray1,IGray2,K,T,R,'do_plot',devMode,'size_frame','valid');
+[img1_rectified, img2_rectified, Tr1, Tr2, offset_x_pixel] = ...
+    rectification(IGray1,IGray2,K,T,R,'do_plot',devMode,'size_frame','valid_offset');
 
 
 %% Disparitätsermittling
