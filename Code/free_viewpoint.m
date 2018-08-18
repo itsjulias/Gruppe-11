@@ -71,7 +71,7 @@ E = achtpunktalgorithmus(Korrespondenzen_robust,K);
 disp('-------------rectification--------------')
 [img1_rectified, img2_rectified, Tr1, Tr2, offset_x_pixel] = ...
     rectification(IGray1,IGray2,K,T,R,'do_plot',devMode,'size_frame','valid_offset');
-save('zwspeicher.nat')
+save('zwspeicher.mat')
 
 %% Disparitätsermittling
 disp('---------disparity estimation-----------')
