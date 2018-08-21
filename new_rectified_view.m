@@ -47,5 +47,5 @@ v = double(I1_rec(p_valid));
 
 F = scatteredInterpolant(NEW_pixel_x(:),NEW_pixel_y(:),v);
 fprintf('F berechnet')
-new_rectified_img = uint8(F({1:max(NEW_pixel_x),1:size(I1_rec,1)}))';
+new_rectified_img = uint8(F({min(NEW_pixel_x):max(NEW_pixel_x),1:size(I1_rec,1)}))';
 end
