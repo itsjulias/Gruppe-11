@@ -1,8 +1,10 @@
-function new_rectified_img = new_rectified_view(I1_rec,depth_map,T_x)
+function new_rectified_img = new_rectified_view(I1_rec,depth_map,T_x,min_x,max_x)
 %NEW_RECTIFIED_VIEW Gibt rektifizierte Zwischenansicht zurück
 % -----------------------------------------------------------------------
 % !!! T_x zwischen 0 (linke Ansicht) und -1 (rechte Ansicht) wählen !!!
 % -----------------------------------------------------------------------
+% min_x und max_x bestimmen die Pixelgrenzen für die die neue Ansicht
+% berechnet werden soll.
 
 % P2 = R*P1+T mit R=I und P1=lamda1*x1
 % lambda2*x2 = lambda1*x1+T => lambda1 und lambda2 sind hier in diesem Fall
@@ -23,7 +25,7 @@ function new_rectified_img = new_rectified_view(I1_rec,depth_map,T_x)
 [L_pixel_x,L_pixel_y] = meshgrid(1:size(I1_rec,2),1:size(I1_rec,1));
 
 % Tiefe wurde bisher bestimmt als: depth = 1/(x1_pixel-x2_pixel). Der erste
-% Eintragd der Kalibrierungsmatrix K(1,1) entspricht dem Umrechnungsfaktor
+% Eintrag der Kalibrierungsmatrix K(1,1) entspricht dem Umrechnungsfaktor
 % zwischen Abständen der x-Weltkoordinaten und x-Pixelkoordinaten:
 % d_x_pixel = K(1,1)*d_x_welt
 % Daraus folgt für die "echte" Tiefe: depth = K(1,1)/(x1_pixel-x2_pixel)
@@ -45,7 +47,7 @@ NEW_pixel_x = NEW_pixel_x(p_valid);
 NEW_pixel_y = L_pixel_y(p_valid);
 v = double(I1_rec(p_valid));
 
-F = scatteredInterpolant(NEW_pixel_x(:),NEW_pixel_y(:),v);
-fprintf('F berechnet')
-new_rectified_img = uint8(F({min(NEW_pixel_x):max(NEW_pixel_x),1:size(I1_rec,1)}))';
+F = scatteredInterpolant(NEW_pixel_x(:),NEW_pixel_y(:),v,'linear','none');
+new_rectified_img = uint8(F({min_x:max_x,1:size(I1_rec,1)}))';
 end
+
