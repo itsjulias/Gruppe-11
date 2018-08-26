@@ -1,4 +1,4 @@
-function [img_L_r, img_R_r, TL, TR, offset_x] = rectification (img1, img2,K,T,R,varargin)
+function [img_L_r, img_R_r, TL, TR, R_rect, offset_x] = rectification (img1, img2,K,T,R,varargin)
 % This function rectifies the gray images img1 and img2. The parameters,
 % which must be given are EF (essential or fundamental matrix) and if EF is
 % the essential matrix a camera calibratrion matrix K. Furthermore the
@@ -25,7 +25,7 @@ size_frame = p.Results.size_frame;
 %% Rectification Algorithum (von Paper Fusiello)
 Po1 = K*[1 0 0 0; 0 1 0 0; 0 0 1 0];
 Po2 = K*[R, T];
-[TL, TR] = rectify_fusiello(Po1,Po2,K);
+[TL, TR,R_rect] = rectify_fusiello(Po1,Po2,K);
 
 % Schnittpunkt optische Achse mit Bildebene entspricht Bildmitte
 % Linkes und rechtes Bild sind gleich groß.
@@ -47,7 +47,7 @@ dR(2) = center(2) - center_R_r(2)/center_R_r(3);
 dL(1) = 0;
 dR(1) = 0;
 % Homographien erneut mit angepasster Kalibrierung berechnen.
-[TL, TR] = rectify_fusiello(Po1,Po2,K,dL,dR);
+[TL, TR,~] = rectify_fusiello(Po1,Po2,K,R_rect,dL,dR);
 
 TL_inv = inv(TL);
 TR_inv = inv(TR);
