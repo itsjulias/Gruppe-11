@@ -15,23 +15,23 @@ IGray2 = gain_offset_correction_cdf(IGray2);
 
 %% Bilateralte Filterung
 % Kanten sollen sich gut von homogenen Flächen abheben können
-IGray1 = uint8(bfltGray(double(IGray1),12,100,15));
-IGray2 = uint8(bfltGray(double(IGray2),12,100,15));
+IGray1_bf = uint8(bfltGray(double(IGray1),12,100,15));
+IGray2_bf = uint8(bfltGray(double(IGray2),12,100,15));
 
 %% Harris-Merkmale berechnen
 disp('-------------getting feature points--------------')
 % Robuste Einstellungen 'segment_length',15,'k',0.12,'min_dist',10,'N',20
-Merkmale1 = harris_detektor(IGray1,'segment_length',15,'k',0.15,'min_dist',20,'N',40,'do_plot',devMode);
-Merkmale2 = harris_detektor(IGray2,'segment_length',15,'k',0.15,'min_dist',20,'N',40,'do_plot',devMode);
+Merkmale1 = harris_detektor(IGray1_bf,'segment_length',15,'k',0.15,'min_dist',20,'N',40,'do_plot',devMode);
+Merkmale2 = harris_detektor(IGray2_bf,'segment_length',15,'k',0.15,'min_dist',20,'N',40,'do_plot',devMode);
 
 %% Korrespondenzschaetzung
 disp('-------------estimation correspondence points--------------')
 % Robuste Einstellungen 'window_length',55,'min_corr',0.9
-Korrespondenzen = punkt_korrespondenzen(IGray1,IGray2,Merkmale1,Merkmale2,'window_length',45,'min_corr',0.95,'do_plot',devMode);
+Korrespondenzen = punkt_korrespondenzen(IGray1_bf,IGray2_bf,Merkmale1,Merkmale2,'window_length',45,'min_corr',0.95,'do_plot',devMode);
 
 %% Finde robuste Korrespondenzpunktpaare mit Hilfe des RANSAC-Algorithmus
 disp('-------------finding robust correspondence points--------------')
-Korrespondenzen_robust = F_ransac(Korrespondenzen,'epsilon',0.7, 'tolerance', 0.01);
+Korrespondenzen_robust = F_ransac(Korrespondenzen,'epsilon',0.7, 'tolerance', 0.04);
 
 % Zeige die robusten Korrespondenzpunktpaare
 if(devMode)
@@ -69,18 +69,30 @@ E = achtpunktalgorithmus(Korrespondenzen_robust,K);
 
 %% Bildrektifizierungsalgorithmus
 disp('-------------rectification--------------')
-[img1_rectified, img2_rectified, Tr1, Tr2, offset_x_pixel] = ...
+[img1_rectified, img2_rectified, Tr1, Tr2,R_rect, offset_x_pixel] = ...
     rectification(IGray1,IGray2,K,T,R,'do_plot',devMode,'size_frame','valid_offset');
+% [img1_rectified_full, img2_rectified_full, Tr1, Tr2,R_rect, offset_x_pixel] = ...
+%     rectification(IGray1,IGray2,K,T,R,'do_plot',devMode,'size_frame','full');
 save('zwspeicher.mat')
 
-%% Disparitätsermittling
+%% Disparitätsermittlung
 disp('---------disparity estimation-----------')
+[depth_map,depth_map2,disparity_map] = ...
+    depth_estimation(img1_rectified,img2_rectified,K,T,offset_x_pixel);
 
-% [depth_map] = ...
-%     depth_estimation(img1_rectified,img2_rectified,'do_plot',devMode);
-
-
+%% Projektion auf neues Bild
+disp('---------projection-----------')
+alpha = p*13.636;
+[virtual_view_img,img_rectified_new] = projection(IGray1,...
+                                                  img1_rectified,...
+                                                  depth_map',...
+                                                  K,-p,R_rect,alpha,...
+                                                  offset_x_pixel);                                          
+figure
+imshow(virtual_view_img);
+figure
+imshow(img_rectified_new);
 %% Ausgabe des Free-Viewpoint Bildes
-output_image = uint8(p*image1+(1-p)*image2);
+output_image = virtual_view_img;
 end
 

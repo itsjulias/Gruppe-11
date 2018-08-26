@@ -10,10 +10,10 @@ konst_dev = 0;
 
 disparity_map = zeros(sp_L,zl_L);
 
-        max_d = -200;
-        min_d = 500;
+        max_d = round(-200/4);
+        min_d = round(500/4);
 
-window_length = 9;
+window_length = 3;
 % Erlaubte minimale Distanz zum Bildrand.
 s = (window_length-1)/2;
 
@@ -21,21 +21,21 @@ s = (window_length-1)/2;
             % Suche im rechten Bild eine Zeile über/unter der Zeile des linken
             % Bilds => konst_dev
             % Überarbeiten für konst_dev > 0!
-for i = s+1-konst_dev:zl_L-s
+for i = s+1-konst_dev:zl_L-s % Zeilen werden hochgez�hlt, s: Abstand zum Rand, zl_L: untere Rand Bild1
 % for i = 800:1000
-    (i-s-1)/(zl_L-2*s+konst_dev)
+    (i-s-1)/(zl_L-2*s+konst_dev); % grobe Fortschrittsanzeigen
 %     (i-800)/200
-    disparity_map(s+1:sp_L-s,i) = SAD_line(i);
+    disparity_map(s+1:sp_L-s,i) = SAD_line(i); %sp_L: rechter Rand Bild1
 end
 
-disparity_map_unscaled = disparity_map;
+disparity_map_unscaled = disparity_map';
 disparity_map = disparity_map_unscaled-(off_d-min_d);
 disparity_map = disparity_map ./ max(disparity_map(:));
 figure
 imshow(disparity_map')
 % Überarbeiten!
-depth_map4 = 1./disparity_map;
-depth_map4 = depth_map4./10;
+depth_map4 = 1./disparity_map_unscaled;
+% depth_map4 = depth_map4./10;
 figure;
 imshow(depth_map4');
 
@@ -106,7 +106,7 @@ function d_cor = SAD_line(line_number) % , min_cor
         % Function gibt nur d fï¿½r die Pixel des linkes Bildes mit mind.
         % Abstand s zum Bildrand zurï¿½ck => length(d_cor) = sp-2*s
                
-        % Matrizen für stacked vectoren anlegen.
+        % Matrizen f�r stacked vectoren anlegen.
         N_L = zeros(window_length^2,sp_L-2*s);
         N_R = zeros(window_length^2,sp_R-2*s);
         % Normierte Fenster für linkes Bild berechnen:
@@ -145,7 +145,7 @@ function d_cor = SAD_line(line_number) % , min_cor
                 if X+Y < 1 || X+Y > size(N_R,2)
                     % Pixel in Bild 2 liegt nicht innerhalb des Bildes mit
                     % mindestens Abstand s zum Bildrand
-                    SAD_matrix(X,Y-max_d+1) = -1;
+                    SAD_matrix(X,Y-max_d+1) = Inf;
                 else
                     % Korrelation mittels Skalarprodukt berechnen.
                     SAD_matrix(X,Y-max_d+1) = sum(abs(N_L_W-N_R(:,X+Y)));
