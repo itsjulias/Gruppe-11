@@ -7,9 +7,6 @@ if nargin == 3
     dR = [0;0];
 end
 
-% Translation ist bereits berechnet worden: Wieso nicht v1 = T bzw.
-% im unkalibrierten Fall T durch T' = K*T ersetzen.
-% c1 berechnen unnötig, da gleich 0?
 c1 = -inv(PoL(:,1:3))*PoL(:,4); % is equal to (0,0,0)
 % Epipol e1
 c2 = -inv(PoR(:,1:3))*PoR(:,4); % is equal to -R'*T
@@ -35,30 +32,23 @@ KR(1,3)=KR(1,3)+dR(1);
 % Justieren des Ursprungs in y-Richtung
 KR(2,3)=KR(2,3)+dR(2);      
       
-% new projection matrices
-% Überflüssig? (siehe unten)
-% Woher kommen diese Gleichungen?
-PnL = KL * [R_rect -R_rect*c1 ];
-PnR = KR * [R_rect -R_rect*c2 ];
-
 % rectifying image transformation
 % Home Position / Umwandlung Weltkoordinaten X in Pixelkoordinaten x: x = K*X
 % Rotation by matrix R for left image and by matrix R_rect*R' for right
 % image.
-% Umwandlung Weltkoordinaten X in rotierte Pixelkoordinaten x' für linkes
+% Umwandlung Weltkoordinaten X in rotierte Pixelkoordinaten x' fÃ¼r linkes
 % Bild: x' = KL*R_rect*X
-% Umwandlung Weltkoordinaten X in rotierte Pixelkoordinaten x' für rechtes
+% Umwandlung Weltkoordinaten X in rotierte Pixelkoordinaten x' fÃ¼r rechtes
 % Bild: x' = KR*R_rect*R'*X
-% Einsetzen der Gleichung für die Home Position in die Gleichungen für die
-% rotierten Pixelkoordinaten, führt zu:
-% Linkes Bild: x' = KL*R_rect*inv(K)*X
-% Rechtes Bild: x' = KR*R*_rect*R'*inv(K)*X
+% Einsetzen der Gleichung fÃ¼r die Home Position in die Gleichungen fÃ¼r die
+% rotierten Pixelkoordinaten, fÃ¼hrt zu:
+% Linkes Bild: x' = KL*R_rect*inv(K)*x
+% Rechtes Bild: x' = KR*R*_rect*R'*inv(K)*x
 % Daraus ergeben sich die folgenden Homographien:
 % TL = KL*R_rect*inv(K)
-% TR = KR*R_rect*inv(K*R) = KR*R_rect*inv(R)*inv(K) => In rectification.pdf
-% steht Formel: mit R_r = R*R_rect ~= R_rect*R' => Fehler in pdf?
-TL = PnL(1:3,1:3)* inv(PoL(1:3,1:3));
-TR = PnR(1:3,1:3)* inv(PoR(1:3,1:3));
+% TR = KR*R_rect*inv(K*R) = KR*R_rect*inv(R)*inv(K)
+TL = KL * R_rect * inv(PoL(1:3,1:3));
+TR = KR * R_rect * inv(PoR(1:3,1:3));
 
 
 end
