@@ -1,4 +1,4 @@
-function alpha = get_alpha(R)
+function alpha = get_max_alpha(R)
 % GET_ALPHA Berechnet aus der Rotationsmatrix den Winkel der Drehung um die
 % y-Achse
 
