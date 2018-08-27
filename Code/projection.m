@@ -1,4 +1,6 @@
-function [virtual_view_img,img_rectified_new] = projection(IGray_L,img_rectified_L,depth_map,K,T_x,R_rect,alpha,offset_x)
+function [virtual_view_img,img_rectified_new] = projection(IGray_L,...
+                        img_rectified_L_full,depth_map,K,T_x,R_rect,...
+                        alpha,offset_x,d_cut_up,d_cut_down)
 %PROJECTION Berechnet neue rektifizierte Zwischenansicht und führt
 %anschließend Derektifizierung durch
 % IGray_L = Linkes Graubild
@@ -72,7 +74,7 @@ max_x_v_rec = max(corners_rec(1,:));
 % Variable dif entspricht dem Abstand in x-Richtung zwischen der linken
 % Ecke der neuen rektifizierten Ansicht und ihrem ursprünglichen
 % Mittelpunkt (vor der Vorschiebung um d_rec(1)).
-size_x_rec = size(img_rectified_L,2);
+size_x_rec = size(img_rectified_L_full,2);
 dif = center_rec(1)-min_x_v_rec+d_rec(1);
 % Sicher gehen, dass min_x_v_rec <= 0
 min_x_v_rec = min(-round(dif-(size_x_rec-offset_x)/2),0);
@@ -80,7 +82,7 @@ max_x_v_rec = max_x_v_rec+min_x_v_rec;
 
 
 % Bestimme neue rektifizierte Zwischenansicht
-img_rectified_new = new_rectified_view(img_rectified_L,depth_map,T_x,...
+img_rectified_new = new_rectified_view(img_rectified_L_full,depth_map,T_x,...
     min_x_v_rec,max_x_v_rec);
 
 % Meshgrid, das Pixelkoordinaten der derektifizierten Ansicht enthält in
@@ -97,8 +99,8 @@ v = double(img_rectified_new);
 % Um Interpolant zu bestimmen, bekannte Stützstellen und Intensitäten
 % übergeben.
 F = griddedInterpolant({1:size(img_rectified_new,2),...
-                        1:size(img_rectified_new,1)},v','linear','none');
+        1-d_cut_up:size(img_rectified_new,1)-d_cut_up},v','linear','none');
 virtual_view_img = uint8(F(pixel_x_rec(:),pixel_y_rec(:)))';
 virtual_view_img = reshape(virtual_view_img,[size_y, size_x]);
-            
+virtual_view_img = virtual_view_img(1:end-d_cut_down,:);
 end
