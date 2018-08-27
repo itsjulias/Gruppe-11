@@ -1,4 +1,4 @@
-function [img_L_r, img_R_r, TL, TR, R_rect, offset_x] = rectification (img1, img2,K,T,R,varargin)
+function [img_L_r,img_L_r_full, img_R_r, TL, TR, R_rect, offset_x] = rectification (img1, img2,K,T,R,varargin)
 % This function rectifies the gray images img1 and img2. The parameters,
 % which must be given are EF (essential or fundamental matrix) and if EF is
 % the essential matrix a camera calibratrion matrix K. Furthermore the
@@ -68,7 +68,7 @@ corners_R_r = TR*[0, size_x,size_x,0;
     ones(1,4)];
 corners_R_r = corners_R_r./corners_R_r(3,:);% Normalisierung der z-Komponente auf eins.
 
-% Der Bildausschnitt, der nun beide Bilder enthält, wird nun ermittelt
+%% Der Bildausschnitt, der nun beide Bilder enthält, wird nun ermittelt
 if(strcmp(size_frame,'full'))
     %
     h_max_L_xy = max(ceil(corners_L_r(1:2,:)),[],2);
@@ -109,6 +109,7 @@ elseif(strcmp(size_frame,'valid_offset'))
     % Dadurch wird der Versatz zwischen beiden Bildern reduziert. Speichere
     % diese Differenz in der Variable offset_x, um später die Disparität
     % richtig zu berechnen.
+    % Ansicht für depth_map
     offset_x = ceil(corners_L_x_sorted(2))-ceil(corners_R_x_sorted(2));
     max_L_xy(1) = floor(corners_L_x_sorted(3));
     min_L_xy(1) = ceil(corners_L_x_sorted(2));
@@ -118,18 +119,34 @@ elseif(strcmp(size_frame,'valid_offset'))
     min_L_xy(2) = ceil(corners_LR_y_sorted(4));
     max_R_xy(2) = floor(corners_LR_y_sorted(5));
     min_R_xy(2) = ceil(corners_LR_y_sorted(4));
+    
+    % Bestimme weiteren Ausschnitt, der das gesamte rektifizierte Bild
+    % zeigt (ohne in y-Richtung etwas abzuschneiden).
+    % Ansicht für Derektifizierung
+    min_L_xy_full = min_L_xy;
+    max_L_xy_full = max_L_xy;
+    min_L_xy_full(2) = ceil(min(corners_L_r(2,:)));
+    max_L_xy_full(2) = floor(max(corners_L_r(2,:)));
 end
 
+%% Meshgrid
 % Um interpolieren zu können wird ein meshgrid benötigt, das
 % zurücktransformiert werden kann
-[meshX_L_r,meshY_L_r] = meshgrid(min_L_xy(1):max_L_xy(1)-1,...
-    min_L_xy(2):max_L_xy(2)-1);
+% Ansicht für depth_map
+[meshX_L_r,meshY_L_r] = meshgrid(min_L_xy(1):max_L_xy(1),...
+    min_L_xy(2):max_L_xy(2));
 meshZ_L_r = ones(size(meshX_L_r));
-[meshX_R_r,meshY_R_r] = meshgrid(min_R_xy(1):max_R_xy(1)-1,...
-    min_R_xy(2):max_R_xy(2)-1);
+[meshX_R_r,meshY_R_r] = meshgrid(min_R_xy(1):max_R_xy(1),...
+    min_R_xy(2):max_R_xy(2));
 meshZ_R_r = ones(size(meshX_R_r));
 
-% Rücktransformation der Meshgrids zur Interpolation
+% Ansicht für Derektifizierung
+[meshX_L_r_full,meshY_L_r_full] = meshgrid(min_L_xy_full(1):max_L_xy_full(1),...
+    min_L_xy_full(2):max_L_xy_full(2));
+meshZ_L_r_full = ones(size(meshX_L_r_full));
+
+%% Rücktransformation der Meshgrids zur Interpolation
+% Ansichten für depth map
 meshZ_L_dr = TL_inv(3,1)*meshX_L_r + TL_inv(3,2)*meshY_L_r ...
     + TL_inv(3,3)*meshZ_L_r;
 meshX_L_dr = (TL_inv(1,1)*meshX_L_r + TL_inv(1,2)*meshY_L_r...
@@ -144,15 +161,25 @@ meshX_R_dr = (TR_inv(1,1)*meshX_R_r + TR_inv(1,2)*meshY_R_r...
 meshY_R_dr = (TR_inv(2,1)*meshX_R_r + TR_inv(2,2)*meshY_R_r...
     + TR_inv(2,3)*meshZ_R_r)./meshZ_R_dr;
 
+% Ansicht für Derektifizierung
+meshZ_L_dr_full = TL_inv(3,1)*meshX_L_r_full + TL_inv(3,2)*meshY_L_r_full ...
+    + TL_inv(3,3)*meshZ_L_r_full;
+meshX_L_dr_full = (TL_inv(1,1)*meshX_L_r_full + TL_inv(1,2)*meshY_L_r_full...
+    + TL_inv(1,3)*meshZ_L_r_full)./meshZ_L_dr_full;
+meshY_L_dr_full = (TL_inv(2,1)*meshX_L_r_full + TL_inv(2,2)*meshY_L_r_full...
+    + TL_inv(2,3)*meshZ_L_r_full)./meshZ_L_dr_full;
+
+%% Interpolation
 % Meshgrid / Stützstellen an denen Werte bekannt sind
-[meshX_L, meshY_L] = meshgrid(0:size_x-1,0:size_y-1);
-[meshX_R, meshY_R] = meshgrid(0:size_x-1,0:size_y-1);
+[meshX, meshY] = meshgrid(1:size_x,1:size_y);
 % Bestimmte unbekannte Werte and den Stellen meshX_L_dr bzw. meshY_L_dr
 % durch Interpolation
-img_L_r = uint8(interp2(meshX_L,meshY_L,double(img1),...
+img_L_r = uint8(interp2(meshX,meshY,double(img1),...
     meshX_L_dr,meshY_L_dr,'linear',NaN));
-img_R_r = uint8(interp2(meshX_R,meshY_R,double(img2),...
+img_R_r = uint8(interp2(meshX,meshY,double(img2),...
     meshX_R_dr,meshY_R_dr,'linear',NaN));
+img_L_r_full = uint8(interp2(meshX,meshY,double(img1),...
+    meshX_L_dr_full,meshY_L_dr_full,'linear',NaN));
 
 if(do_plot)
     figure
