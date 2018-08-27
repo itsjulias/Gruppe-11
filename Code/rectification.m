@@ -1,4 +1,4 @@
-function [img_L_r,img_L_r_full, img_R_r, TL, TR, R_rect, offset_x] = rectification (img1, img2,K,T,R,varargin)
+function [img_L_r,img_R_r,TL,TR,R_rect,offset_x,img_L_r_full,d_cut_up,d_cut_down] = rectification (img1, img2,K,T,R,varargin)
 % This function rectifies the gray images img1 and img2. The parameters,
 % which must be given are EF (essential or fundamental matrix) and if EF is
 % the essential matrix a camera calibratrion matrix K. Furthermore the
@@ -127,6 +127,12 @@ elseif(strcmp(size_frame,'valid_offset'))
     max_L_xy_full = max_L_xy;
     min_L_xy_full(2) = ceil(min(corners_L_r(2,:)));
     max_L_xy_full(2) = floor(max(corners_L_r(2,:)));
+    
+    % Gebe jeweils für oben und unten den Abstand zurück, um den die
+    % Ansicht für die Derektifizierung größer ist, als die Ansicht für die
+    % Depth Map
+    d_cut_up = max_L_xy_full(2)-max_L_xy(2);
+    d_cut_down = min_L_xy(2)-min_L_xy_full(2);
 end
 
 %% Meshgrid
