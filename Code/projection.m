@@ -52,8 +52,8 @@ K_rec(2,3) = K(2,3)+d_rec(2);
 % Neue Transformation für die Rektifizierung berechnen.
 T_rec = K_rec*R_rect*R_v'*inv(K);
 
-% Bestimme wo die Ecken der derektifizierten Ansicht in der rektifizierten
-% Ansicht liegen. 
+% Bestimme wo die Ecken und Mittelpunkt der derektifizierten Ansicht in der
+% rektifizierten Ansicht liegen. 
 corners_rec = T_rec*[0, size_x,size_x, 0;
                 size_y, size_y, 0, 0;
                 ones(1,4)];
@@ -71,7 +71,7 @@ max_x_v_rec = max(corners_rec(1,:));
 % berechnen sind, nach links verschoben wird.
 % Variable dif entspricht dem Abstand in x-Richtung zwischen der linken
 % Ecke der neuen rektifizierten Ansicht und ihrem ursprünglichen
-% Mittelpunkt (vor der Vorschiebung um d_rec(1).
+% Mittelpunkt (vor der Vorschiebung um d_rec(1)).
 size_x_rec = size(img_rectified_L,2);
 dif = center_rec(1)-min_x_v_rec+d_rec(1);
 % Sicher gehen, dass min_x_v_rec <= 0
@@ -102,4 +102,3 @@ virtual_view_img = uint8(F(pixel_x_rec(:),pixel_y_rec(:)))';
 virtual_view_img = reshape(virtual_view_img,[size_y, size_x]);
             
 end
-
