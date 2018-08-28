@@ -1,4 +1,5 @@
-function depth_map4 = depth_estimation4(I_L_rec,I_R_rec, off_d)
+function disparity_map = disparity_estimation(I_L_rec,I_R_rec,...
+    interv_search_left,interv_search_right,off_d,window_length)
 %DEPTH_ESTIMATION2 mittels NCC Liniensuche
 
 % I_rec und I2_rec haben selbe Anzahl an Zeilen, aber nicht unbedingt selbe
@@ -6,50 +7,32 @@ function depth_map4 = depth_estimation4(I_L_rec,I_R_rec, off_d)
 [zl_L,sp_L] = size(I_L_rec);
 sp_R = size(I_R_rec,2);
 
-konst_dev = 0;
-
 disparity_map = zeros(sp_L,zl_L);
 
-        max_d = round(-200/4);
-        min_d = round(500/4);
+% Es wird nicht jeweils die komplette Zeile nach Korrespondenzen abgesucht,
+% sondern nur innerhalb des festgelegten Intervalls.
+r_d = -interv_search_right;
+l_d = interv_search_left;
 
-window_length = 3;
 % Erlaubte minimale Distanz zum Bildrand.
 s = (window_length-1)/2;
 
 % Liniensuche zeilenweise
-            % Suche im rechten Bild eine Zeile über/unter der Zeile des linken
-            % Bilds => konst_dev
-            % Überarbeiten für konst_dev > 0!
-for i = s+1-konst_dev:zl_L-s % Zeilen werden hochgez�hlt, s: Abstand zum Rand, zl_L: untere Rand Bild1
-% for i = 800:1000
-    (i-s-1)/(zl_L-2*s+konst_dev); % grobe Fortschrittsanzeigen
-%     (i-800)/200
+for i = s+1:zl_L-s % Zeilen werden hochgezählt, s: Abstand zum Rand, zl_L: unterer Rand Bild1
     disparity_map(s+1:sp_L-s,i) = SAD_line(i); %sp_L: rechter Rand Bild1
 end
 
-disparity_map_unscaled = disparity_map';
-disparity_map = disparity_map_unscaled-(off_d-min_d);
-disparity_map = disparity_map ./ max(disparity_map(:));
-figure
-imshow(disparity_map')
-% Überarbeiten!
-depth_map4 = 1./disparity_map_unscaled;
-% depth_map4 = depth_map4./10;
-figure;
-imshow(depth_map4');
-
-save('depth4')
+disparity_map = disparity_map';
 
 
     function d_cor = NCC_line(line_number) % , min_cor
-        % Function gibt nur d fï¿½r die Pixel des linkes Bildes mit mind.
-        % Abstand s zum Bildrand zurï¿½ck => length(d_cor) = sp-2*s
+        % Function gibt nur d fÃ¯Â¿Â½r die Pixel des linkes Bildes mit mind.
+        % Abstand s zum Bildrand zurÃ¯Â¿Â½ck => length(d_cor) = sp-2*s
                
-        % Matrizen für stacked vectoren anlegen.
+        % Matrizen fÃ¼r stacked vectoren anlegen.
         N_L = zeros(window_length^2,sp_L-2*s);
         N_R = zeros(window_length^2,sp_R-2*s);
-        % Normierte Fenster für linkes Bild berechnen:
+        % Normierte Fenster fÃ¼r linkes Bild berechnen:
         for k = s+1:sp_L-s
              % Quadratisches Fenster extrahieren.
              L_W = double(I_L_rec(line_number-s:line_number+s,k-s:k+s));
@@ -61,55 +44,55 @@ save('depth4')
              idx = k-s;
              N_L(:,idx) = L_W(:);
         end
-        % analog für rechtes Bild
+        % analog fÃ¼r rechtes Bild
         for k = s+1:sp_R-s
-            % Suche im rechten Bild eine Zeile über der Zeile des linken
+            % Suche im rechten Bild eine Zeile Ã¼ber der Zeile des linken
             % Bilds
-             R_W = double(I_R_rec(line_number-s+konst_dev:...
-                 line_number+s+konst_dev,k-s:k+s));
+             R_W = double(I_R_rec(line_number-s:...
+                 line_number+s,k-s:k+s));
              R_W = R_W - mean(R_W(:));
              R_W = R_W/std(R_W(:));
              idx = k-s;
              N_R(:,idx) = R_W(:);
         end
-        % Suche fï¿½r jedes Pixel im linken Bild passendes Pixel im rechten
+        % Suche fÃ¯Â¿Â½r jedes Pixel im linken Bild passendes Pixel im rechten
         % Bild in einem Intervall von max_d bis min_d Pixel.
         % NCC-matrix: Zeile entspricht x-Pixelkoordinate im linken Bild,
         % Spalte entspricht dem Liniensuchintervall im rechten Bild.
-        NCC_matrix = zeros(sp_L-2*s,min_d-max_d+1);
+        NCC_matrix = zeros(sp_L-2*s,l_d-r_d+1);
 
         % Iterieren durch alle Spalten von N_L bzw. N_R
         for X = 1:size(N_L,2)
             N_L_W = N_L(:,X);
-            for Y = max_d:min_d
+            for Y = r_d:l_d
                 if X+Y < 1 || X+Y > size(N_R,2)
                     % Pixel in Bild 2 liegt nicht innerhalb des Bildes mit
                     % mindestens Abstand s zum Bildrand
-                    NCC_matrix(X,Y-max_d+1) = -1;
+                    NCC_matrix(X,Y-r_d+1) = -1;
                 else
                     % Korrelation mittels Skalarprodukt berechnen.
-                    NCC_matrix(X,Y-max_d+1) = (1/(window_length^2-1))*(N_L_W'*N_R(:,X+Y));
+                    NCC_matrix(X,Y-r_d+1) = (1/(window_length^2-1))*(N_L_W'*N_R(:,X+Y));
                 end
             end
         end
         [~, ind_max] = max(NCC_matrix,[],2);   
 
-        % Spaltenvektor erstellen, der die Pixelabstï¿½nde zwischen einem
+        % Spaltenvektor erstellen, der die PixelabstÃ¯Â¿Â½nde zwischen einem
         % Pixel im linken Bild und dem korrelierten Pixel im rechten Bild
-        % enthï¿½lt. Erster Eintrag enthï¿½lt d vom Pixel mit der x-Koordinate
+        % enthÃ¯Â¿Â½lt. Erster Eintrag enthÃ¯Â¿Â½lt d vom Pixel mit der x-Koordinate
         % s+1 in der aktuellen Suchzeile im linken Bild.
-        % d = m1 - m2 (Offset berücksichtigen!)
-        d_cor = off_d-(ind_max+max_d-1);
+        % d = m1 - m2 (Offset berÃ¼cksichtigen!)
+        d_cor = off_d-(ind_max+r_d-1);
     end
 
 function d_cor = SAD_line(line_number) % , min_cor
-        % Function gibt nur d fï¿½r die Pixel des linkes Bildes mit mind.
-        % Abstand s zum Bildrand zurï¿½ck => length(d_cor) = sp-2*s
+        % Function gibt nur d fÃ¯Â¿Â½r die Pixel des linkes Bildes mit mind.
+        % Abstand s zum Bildrand zurÃ¯Â¿Â½ck => length(d_cor) = sp-2*s
                
-        % Matrizen f�r stacked vectoren anlegen.
+        % Matrizen für stacked vectoren anlegen.
         N_L = zeros(window_length^2,sp_L-2*s);
         N_R = zeros(window_length^2,sp_R-2*s);
-        % Normierte Fenster für linkes Bild berechnen:
+        % Normierte Fenster fÃ¼r linkes Bild berechnen:
         for k = s+1:sp_L-s
              % Quadratisches Fenster extrahieren.
              L_W = double(I_L_rec(line_number-s:line_number+s,k-s:k+s));
@@ -121,44 +104,44 @@ function d_cor = SAD_line(line_number) % , min_cor
              idx = k-s;
              N_L(:,idx) = L_W(:);
         end
-        % analog für rechtes Bild
+        % analog fÃ¼r rechtes Bild
         for k = s+1:sp_R-s
-            % Suche im rechten Bild eine Zeile über der Zeile des linken
+            % Suche im rechten Bild eine Zeile Ã¼ber der Zeile des linken
             % Bilds
-             R_W = double(I_R_rec(line_number-s+konst_dev:...
-                 line_number+s+konst_dev,k-s:k+s));
+             R_W = double(I_R_rec(line_number-s:...
+                 line_number+s,k-s:k+s));
 %              R_W = R_W - mean(R_W(:));
 %              R_W = R_W/std(R_W(:));
              idx = k-s;
              N_R(:,idx) = R_W(:);
         end
-        % Suche fï¿½r jedes Pixel im linken Bild passendes Pixel im rechten
+        % Suche fÃ¯Â¿Â½r jedes Pixel im linken Bild passendes Pixel im rechten
         % Bild in einem Intervall von max_d bis min_d Pixel.
         % NCC-matrix: Zeile entspricht x-Pixelkoordinate im linken Bild,
         % Spalte entspricht dem Liniensuchintervall im rechten Bild.
-        SAD_matrix = zeros(sp_L-2*s,min_d-max_d+1);
+        SAD_matrix = zeros(sp_L-2*s,l_d-r_d+1);
 
         % Iterieren durch alle Spalten von N_L bzw. N_R
         for X = 1:size(N_L,2)
             N_L_W = N_L(:,X);
-            for Y = max_d:min_d
+            for Y = r_d:l_d
                 if X+Y < 1 || X+Y > size(N_R,2)
                     % Pixel in Bild 2 liegt nicht innerhalb des Bildes mit
                     % mindestens Abstand s zum Bildrand
-                    SAD_matrix(X,Y-max_d+1) = Inf;
+                    SAD_matrix(X,Y-r_d+1) = Inf;
                 else
                     % Korrelation mittels Skalarprodukt berechnen.
-                    SAD_matrix(X,Y-max_d+1) = sum(abs(N_L_W-N_R(:,X+Y)));
+                    SAD_matrix(X,Y-r_d+1) = sum(abs(N_L_W-N_R(:,X+Y)));
                 end
             end
         end
         [~, ind_max] = min(SAD_matrix,[],2);   
 
-        % Spaltenvektor erstellen, der die Pixelabstï¿½nde zwischen einem
+        % Spaltenvektor erstellen, der die PixelabstÃ¯Â¿Â½nde zwischen einem
         % Pixel im linken Bild und dem korrelierten Pixel im rechten Bild
-        % enthï¿½lt. Erster Eintrag enthï¿½lt d vom Pixel mit der x-Koordinate
+        % enthÃ¯Â¿Â½lt. Erster Eintrag enthÃ¯Â¿Â½lt d vom Pixel mit der x-Koordinate
         % s+1 in der aktuellen Suchzeile im linken Bild.
-        % d = m1 - m2 (Offset berücksichtigen!)
-        d_cor = off_d-(ind_max+max_d-1);
+        % d = m1 - m2 (Offset berÃ¼cksichtigen!)
+        d_cor = off_d-(ind_max+r_d-1);
     end
 end
