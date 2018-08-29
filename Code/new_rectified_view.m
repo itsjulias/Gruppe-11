@@ -34,19 +34,20 @@ function new_rectified_img = new_rectified_view(I1_rec,depth_map,T_x,min_x,max_x
 %         = K(1,1)*depth_map'
 % Umformen von Gleichung(1) ergibt die neuen Pixelkoordinaten:
 % x2_pixel = x1_pixel + T_pixel/lambda
-% => x2_pixel = x1_pixel + (K(1,1)*T_x) / ((K(1,1))*depth_map')
-%             = x1_pixel + T_x / depth_map'
+% => x2_pixel = x1_pixel + (K(1,1)*T_x) / ((K(1,1))*depth_map)
+%             = x1_pixel + T_x / depth_map
 NEW_pixel_x = L_pixel_x + T_x./depth_map;
 % T_y = 0 und T_z = 0, daraus folgt, dass die y- und z-Pixelkoordinaten
 % unverändert bleiben. (z-Komponente hat sowohl in homogenen
 % Bildkoordinaten als auch homogenen Pixelkoordinaten den Wert 1.)
 
 % Valide Pixel bestimmen
-p_valid = isfinite(NEW_pixel_x);
+p_valid = isfinite(NEW_pixel_x) & isfinite(depth_map);
 NEW_pixel_x = NEW_pixel_x(p_valid);
 NEW_pixel_y = L_pixel_y(p_valid);
 v = double(I1_rec(p_valid));
 
-F = scatteredInterpolant(NEW_pixel_x(:),NEW_pixel_y(:),v,'linear','none');
+F = scatteredInterpolant(NEW_pixel_x,NEW_pixel_y,v,'linear','none');
 new_rectified_img = uint8(F({min_x:max_x,1:size(I1_rec,1)}))';
 end
+
