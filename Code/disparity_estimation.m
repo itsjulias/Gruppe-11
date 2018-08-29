@@ -9,11 +9,6 @@ sp_R = size(I_R_rec,2);
 
 disparity_map = zeros(sp_L,zl_L);
 
-% Es wird nicht jeweils die komplette Zeile nach Korrespondenzen abgesucht,
-% sondern nur innerhalb des festgelegten Intervalls.
-r_d = -interv_search_right;
-l_d = interv_search_left;
-
 % Erlaubte minimale Distanz zum Bildrand.
 s = (window_length-1)/2;
 
@@ -59,19 +54,19 @@ disparity_map = disparity_map';
         % Bild in einem Intervall von max_d bis min_d Pixel.
         % NCC-matrix: Zeile entspricht x-Pixelkoordinate im linken Bild,
         % Spalte entspricht dem Liniensuchintervall im rechten Bild.
-        NCC_matrix = zeros(sp_L-2*s,l_d-r_d+1);
+        NCC_matrix = zeros(sp_L-2*s,interv_search_right-interv_search_left+1);
 
         % Iterieren durch alle Spalten von N_L bzw. N_R
         for X = 1:size(N_L,2)
             N_L_W = N_L(:,X);
-            for Y = r_d:l_d
+            for Y = interv_search_left:interv_search_right
                 if X+Y < 1 || X+Y > size(N_R,2)
                     % Pixel in Bild 2 liegt nicht innerhalb des Bildes mit
                     % mindestens Abstand s zum Bildrand
-                    NCC_matrix(X,Y-r_d+1) = -1;
+                    NCC_matrix(X,Y-interv_search_left+1) = -1;
                 else
                     % Korrelation mittels Skalarprodukt berechnen.
-                    NCC_matrix(X,Y-r_d+1) = (1/(window_length^2-1))*(N_L_W'*N_R(:,X+Y));
+                    NCC_matrix(X,Y-interv_search_left+1) = (1/(window_length^2-1))*(N_L_W'*N_R(:,X+Y));
                 end
             end
         end
@@ -82,7 +77,7 @@ disparity_map = disparity_map';
         % enthÃ¯Â¿Â½lt. Erster Eintrag enthÃ¯Â¿Â½lt d vom Pixel mit der x-Koordinate
         % s+1 in der aktuellen Suchzeile im linken Bild.
         % d = m1 - m2 (Offset berÃ¼cksichtigen!)
-        d_cor = off_d-(ind_max+r_d-1);
+        d_cor = off_d-(ind_max+interv_search_left-1);
     end
 
 function d_cor = SAD_line(line_number) % , min_cor
@@ -119,19 +114,19 @@ function d_cor = SAD_line(line_number) % , min_cor
         % Bild in einem Intervall von max_d bis min_d Pixel.
         % NCC-matrix: Zeile entspricht x-Pixelkoordinate im linken Bild,
         % Spalte entspricht dem Liniensuchintervall im rechten Bild.
-        SAD_matrix = zeros(sp_L-2*s,l_d-r_d+1);
+        SAD_matrix = zeros(sp_L-2*s,interv_search_right-interv_search_left+1);
 
         % Iterieren durch alle Spalten von N_L bzw. N_R
         for X = 1:size(N_L,2)
             N_L_W = N_L(:,X);
-            for Y = r_d:l_d
+            for Y = interv_search_left:interv_search_right
                 if X+Y < 1 || X+Y > size(N_R,2)
                     % Pixel in Bild 2 liegt nicht innerhalb des Bildes mit
                     % mindestens Abstand s zum Bildrand
-                    SAD_matrix(X,Y-r_d+1) = Inf;
+                    SAD_matrix(X,Y-interv_search_left+1) = Inf;
                 else
                     % Korrelation mittels Skalarprodukt berechnen.
-                    SAD_matrix(X,Y-r_d+1) = sum(abs(N_L_W-N_R(:,X+Y)));
+                    SAD_matrix(X,Y-interv_search_left+1) = sum(abs(N_L_W-N_R(:,X+Y)));
                 end
             end
         end
@@ -142,6 +137,6 @@ function d_cor = SAD_line(line_number) % , min_cor
         % enthÃ¯Â¿Â½lt. Erster Eintrag enthÃ¯Â¿Â½lt d vom Pixel mit der x-Koordinate
         % s+1 in der aktuellen Suchzeile im linken Bild.
         % d = m1 - m2 (Offset berÃ¼cksichtigen!)
-        d_cor = off_d-(ind_max+r_d-1);
+        d_cor = off_d-(ind_max+interv_search_left-1);
     end
 end
