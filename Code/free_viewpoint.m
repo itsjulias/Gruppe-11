@@ -32,13 +32,12 @@ Merkmale2 = harris_detektor(IGray2,'segment_length',15,'k',0.15,'min_dist',40,'N
 disp('-------------estimation correspondence points--------------')
 % Robuste Einstellungen 'window_length',55,'min_corr',0.9
 Korrespondenzen = punkt_korrespondenzen(IGray1,IGray2,Merkmale1,Merkmale2,'window_length',45,'min_corr',0.95,'do_plot',devMode);
-
-T_sum = zeros(3,1);
-R_sum = zeros(3,3);
+Korrespondenzen_robust = [];
 for i = 1:10
         %% Finde robuste Korrespondenzpunktpaare mit Hilfe des RANSAC-Algorithmus
         disp('-------------finding robust correspondence points--------------')
-        Korrespondenzen_robust = F_ransac(Korrespondenzen,'epsilon',0.5,'p',0.999,'tolerance', 0.1);
+        Korrespondenzen_robust = [Korrespondenzen_robust,...
+            F_ransac(Korrespondenzen,'epsilon',0.5,'p',0.999,'tolerance', 0.1)];
 
     % Zeige die robusten Korrespondenzpunktpaare
     if(devMode)
@@ -55,7 +54,9 @@ for i = 1:10
             plot([Korrespondenzen_robust(1,i) Korrespondenzen_robust(3,i)],[Korrespondenzen_robust(2,i) Korrespondenzen_robust(4,i)],'b');
         end
     end
-
+end
+    Korrespondenzen_robust = unique(Korrespondenzen_robust','rows')';
+    
     %% Berechne die Essentielle Matrix
     % Kamerakalibrierungsmatrix ist in KK.mat enthalten und wurde mit in der
     % Video-Vorlesung angegebenen Toolbox bestimmt.
@@ -71,13 +72,6 @@ for i = 1:10
 
     [T_cell, R_cell,T,R, d_cell, x1, x2] = ...
         rekonstruktion(T1, T2, R1, R2, Korrespondenzen_robust, K);
-    
-   T_sum = T_sum + T;
-   R_sum = R_sum + R;
-end
-T = T_sum/10;
-R = R_sum/10;
-
 
 % load('zw_for_rec_27_08');
 
@@ -95,9 +89,12 @@ disp('-------------rectification--------------')
 
 %% Disparitätsermittling
 disp('---------disparity estimation-----------')
+
+[min_disparity,max_disparity] = get_min_max_disparity(Korrespondenzen_robust,Tr1,Tr2);
+
 depth_map = ...
     depth_estimation(img1_rectified,img2_rectified,K,T,offset_x_pixel,...
-    d_cut_up,d_cut_down);
+    d_cut_up,d_cut_down,min_disparity,max_disparity);
  %% Projektion auf neues Bild
 disp('---------projection-----------')
 alpha = p*get_max_alpha(R);
@@ -107,7 +104,7 @@ alpha = p*get_max_alpha(R);
                                                   K,-p,R_rect,alpha,...
                                       offset_x_pixel, d_cut_up,d_cut_down);
 
-% save('res_28_08_V3_try2')
+save('res_28_08_V3_try3')
 
 figure
 imshow(img_rectified_new);
