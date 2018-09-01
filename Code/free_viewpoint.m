@@ -39,11 +39,11 @@ disp('-------------estimation correspondence points--------------')
 Korrespondenzen = punkt_korrespondenzen(IGray1_bf,IGray2_bf,Merkmale1,Merkmale2,'window_length',45,'min_corr',0.95,'do_plot',devMode);
 Korrespondenzen_robust = [];
 for i = 1:10
-        %% Finde robuste Korrespondenzpunktpaare mit Hilfe des RANSAC-Algorithmus
-        disp('-------------finding robust correspondence points--------------')
-        Korrespondenzen_robust = [Korrespondenzen_robust,...
-            F_ransac(Korrespondenzen,'epsilon',0.7,'p',0.999,'tolerance', 0.01)];
-
+    %% Finde robuste Korrespondenzpunktpaare mit Hilfe des RANSAC-Algorithmus
+    disp('-------------finding robust correspondence points--------------')
+    Korrespondenzen_robust = [Korrespondenzen_robust,...
+        F_ransac(Korrespondenzen,'epsilon',0.7,'p',0.999,'tolerance', 0.01)];
+    
     % Zeige die robusten Korrespondenzpunktpaare
     if(devMode)
         disp('-------------plot robust correspondence points--------------')
@@ -60,23 +60,23 @@ for i = 1:10
         end
     end
 end
-    Korrespondenzen_robust = unique(Korrespondenzen_robust','rows')';
-    
-    %% Berechne die Essentielle Matrix
-    % Kamerakalibrierungsmatrix ist in KK.mat enthalten und wurde mit in der
-    % Video-Vorlesung angegebenen Toolbox bestimmt.
-    disp('-------------essential matrix calculation--------------')
+Korrespondenzen_robust = unique(Korrespondenzen_robust','rows')';
 
-    load('calib_K.mat');
+%% Berechne die Essentielle Matrix
+% Kamerakalibrierungsmatrix ist in KK.mat enthalten und wurde mit in der
+% Video-Vorlesung angegebenen Toolbox bestimmt.
+disp('-------------essential matrix calculation--------------')
 
-    E = achtpunktalgorithmus(Korrespondenzen_robust,K);
-    % F = achtpunktalgorithmus(Korrespondenzen_robust);
-    % disp(E);
-    % disp(F);
-    [T1, R1, T2, R2, U, V] = TR_aus_E(E);
+load('calib_K.mat');
 
-    [T_cell, R_cell,T,R, d_cell, x1, x2] = ...
-        rekonstruktion(T1, T2, R1, R2, Korrespondenzen_robust, K);
+E = achtpunktalgorithmus(Korrespondenzen_robust,K);
+% F = achtpunktalgorithmus(Korrespondenzen_robust);
+% disp(E);
+% disp(F);
+[T1, R1, T2, R2, U, V] = TR_aus_E(E);
+
+[T_cell, R_cell,T,R, d_cell, x1, x2] = ...
+    rekonstruktion(T1, T2, R1, R2, Korrespondenzen_robust, K);
 
 % load('zw_for_rec_27_08');
 
@@ -92,6 +92,13 @@ disp('-------------rectification--------------')
 % save('comp_28_08')
 % load('comp_28_08');
 
+% für RGB-Kanäle
+for i=1:size(image1,3)
+    [image1_rgb_rectified(:,:,i),image2_rgb_rectified(:,:,i),~,~,~,~,...
+        image1_rgb_rectified_full(:,:,i),~,~] = ...
+        rectification(image1(:,:,i),image2(:,:,i),K,T,R,'do_plot',devMode,'size_frame','valid_offset');
+end
+
 %% Disparitätsermittling
 disp('---------disparity estimation-----------')
 
@@ -100,15 +107,16 @@ disp('---------disparity estimation-----------')
 depth_map = ...
     depth_estimation(img1_rectified,img2_rectified,K,T,offset_x_pixel,...
     d_cut_up,d_cut_down,min_disparity,max_disparity);
- %% Projektion auf neues Bild
+%% Projektion auf neues Bild
 disp('---------projection-----------')
 alpha = p*get_max_alpha(R);
-[virtual_view_img,img_rectified_new] = projection(IGray1,...
-                                                  img1_rectified_full,...
-                                                  depth_map,...
-                                                  K,-p,R_rect,alpha,...
-                                      offset_x_pixel, d_cut_up,d_cut_down);
-
+for i=1:size(image1,3)
+    [virtual_view_img(:,:,i),img_rectified_new(:,:,i)] = projection(image1(:,:,i),...
+        image1_rgb_rectified_full(:,:,i),...
+        depth_map,...
+        K,-p,R_rect,alpha,...
+        offset_x_pixel, d_cut_up,d_cut_down);
+end
 save('res_28_08_V3_try3')
 
 figure
