@@ -10,42 +10,47 @@ IGray2 = rgb_to_gray(image2);
 
 %% Intensitäts und Beleuchtungskorrektur
 disp('-------------bias gain correction of images-----------')
-IGray1 = gain_offset_correction_cdf(IGray1);
-IGray2 = gain_offset_correction_cdf(IGray2);
+IGray1_c = gain_offset_correction_cdf(IGray1);
+IGray2_c = gain_offset_correction_cdf(IGray2);
 
 %% Bilateralte Filterung
 % Kanten sollen sich gut von homogenen Flächen abheben können
-IGray1 = uint8(bfltGray(double(IGray1),12,100,15));
-IGray2 = uint8(bfltGray(double(IGray2),12,100,15));
+%downsample
+[IGray1_c, IGray2_c, odd_even] = downsample(IGray1_c,IGray2_c,1);
 
-% save('zw_nach_filter')
-% load('zw_nach_filter')
+IGray1_bf = uint8(bfltGray(double(IGray1_c),12,100,15));
+IGray2_bf = uint8(bfltGray(double(IGray2_c),12,100,15));
+
+%upsample
+[IGray1_bf] = upsample(IGray1_bf,1,odd_even);
+[IGray2_bf] = upsample(IGray2_bf,1,odd_even);
+
 
 %% Harris-Merkmale berechnen
 disp('-------------getting feature points--------------')
 % Robuste Einstellungen 'segment_length',15,'k',0.12,'min_dist',10,'N',20
-Merkmale1 = harris_detektor(IGray1,'segment_length',15,'k',0.15,'min_dist',40,'N',5,'do_plot',devMode);
-Merkmale2 = harris_detektor(IGray2,'segment_length',15,'k',0.15,'min_dist',40,'N',5,'do_plot',devMode);
+Merkmale1 = harris_detektor(IGray1_bf,'segment_length',15,'k',0.15,'min_dist',20,'N',20,'do_plot',devMode);
+Merkmale2 = harris_detektor(IGray2_bf,'segment_length',15,'k',0.15,'min_dist',20,'N',20,'do_plot',devMode);
 
 
 %% Korrespondenzschaetzung
 disp('-------------estimation correspondence points--------------')
 % Robuste Einstellungen 'window_length',55,'min_corr',0.9
-Korrespondenzen = punkt_korrespondenzen(IGray1,IGray2,Merkmale1,Merkmale2,'window_length',45,'min_corr',0.95,'do_plot',devMode);
+Korrespondenzen = punkt_korrespondenzen(IGray1_bf,IGray2_bf,Merkmale1,Merkmale2,'window_length',45,'min_corr',0.95,'do_plot',devMode);
 Korrespondenzen_robust = [];
 for i = 1:10
         %% Finde robuste Korrespondenzpunktpaare mit Hilfe des RANSAC-Algorithmus
         disp('-------------finding robust correspondence points--------------')
         Korrespondenzen_robust = [Korrespondenzen_robust,...
-            F_ransac(Korrespondenzen,'epsilon',0.5,'p',0.999,'tolerance', 0.1)];
+            F_ransac(Korrespondenzen,'epsilon',0.7,'p',0.999,'tolerance', 0.01)];
 
     % Zeige die robusten Korrespondenzpunktpaare
     if(devMode)
         disp('-------------plot robust correspondence points--------------')
         figure
-        im1 = imshow(IGray1);
+        im1 = imshow(IGray1_bf);
         hold all;
-        im2 = imshow(IGray2);
+        im2 = imshow(IGray2_bf);
         im1.AlphaData = 0.5;
         im2.AlphaData = 0.5;
         plot(Korrespondenzen_robust(1,:),Korrespondenzen_robust(2,:),'*r');
@@ -79,7 +84,7 @@ end
 disp('-------------rectification--------------')
 [img1_rectified,img2_rectified,Tr1,Tr2,R_rect,offset_x_pixel,...
     img1_rectified_full,d_cut_up,d_cut_down] = ...
-    rectification(IGray1,IGray2,K,T,R,'do_plot',devMode,'size_frame','valid_offset');
+    rectification(IGray1_bf,IGray2_bf,K,T,R,'do_plot',devMode,'size_frame','valid_offset');
 % figure
 % imshow(img1_rectified_full)
 % % save('zw_R_rect','R_rect');
@@ -87,7 +92,7 @@ disp('-------------rectification--------------')
 % save('comp_28_08')
 % load('comp_28_08');
 
-%% Disparitätsermittling
+%% Disparit�tsermittling
 disp('---------disparity estimation-----------')
 
 [min_disparity,max_disparity] = get_min_max_disparity(Korrespondenzen_robust,Tr1,Tr2);
@@ -112,4 +117,3 @@ imshow(img_rectified_new);
 % output_image = uint8(p*image1+(1-p)*image2);
 output_image = virtual_view_img;
 end
-
