@@ -1,11 +1,17 @@
 function depth_map = ...
     depth_estimation(img1_rectified,img2_rectified,K,T,offset_x_pixel,...
-    d_cut_up,d_cut_down,varargin)
-%DEPTH_MAP Summary of this function goes here
-%   Detailed explanation goes here
+    d_cut_up,d_cut_down,min_disparity,max_disparity,varargin)
+%DEPTH_MAP 
     window_length = 3;
-    interv_search_left = 500;
-    interv_search_right = 200;
+    % Minimale und maximale Disparität wurde über robuste Korrspondenzen
+    % ermittelt. dist_safety legt fest, um wie viele Pixel die tatsächliche
+    % min./max. Disparität von den ermittelten Werten abweichen darf
+    dist_safety = 20;
+    % Suchintervall festlegeben. Beispiel: Bei interv_search_left = -100
+    % und interv_search_right = 200 wird 100 Pixel nach links und 200 nach
+    % rechts gesucht.
+    interv_search_left = -(max_disparity - offset_x_pixel) - dist_safety;
+    interv_search_right = -(min_disparity - offset_x_pixel) + dist_safety;
 
 for i = 2:-1:2
     %downsampling of images
