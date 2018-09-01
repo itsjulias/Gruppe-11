@@ -17,14 +17,17 @@ if(mod(window_length,2)==0)
     error('window_length must be odd')
 end
 
-if(size_img1(2)<size_img2(2))
-    img2 = img2(1:size_img1(1),1:size_img1(2));
-elseif(size_img1(2)>size_img2(2))
-    img1 = img1(1:size_img2(1),1:size_img2(2));
-end
+% if(size_img1(2)<size_img2(2))
+%     img2 = img2(1:size_img1(1),1:size_img1(2));
+% elseif(size_img1(2)>size_img2(2))
+%     img1 = img1(1:size_img2(1),1:size_img2(2));
+% end
 
 size_x = size(img1,2);
 size_y = size(img1,1);
+
+size_x2 = size(img2,2);
+size_y2 = size(img2,1);
 
 % Rand für Bildsegmentauswahl zur Verfügung stellen
 border_dist = floor(window_length/2);
@@ -33,7 +36,8 @@ border_dist = floor(window_length/2);
 Mpt1 = (border_dist+1):(size_x-border_dist-1);
 
 % Mpt2-Vektor (Merkmalspunkte im Bild 2 entlang x-Achse)
-Mpt2 = (border_dist+1):(size_x-border_dist-1);
+Mpt2 = (border_dist+1):(size_x2-border_dist-1);
+Mpt2_off = Mpt2-offset_pix;
 
 % Für Schleife benötigte Parameter
 window_length_squared = window_length^2;
@@ -51,12 +55,12 @@ for zeile = (border_dist+1):1:(size_y-border_dist-1)
     
     low2_y = zeile-border_dist;
     up2_y = zeile+border_dist;
-    low2_x = Mpt1-border_dist;
-    up2_x = Mpt1+border_dist;
+    low2_x = Mpt2-border_dist;
+    up2_x = Mpt2+border_dist;
     
     % Bestimme Disparity-Band
-%     max_disparity =  -100; %abs(max(max(rough_disparity(low_y:up_y,:)))+offset_pix);
-%     min_disparity = 100; %abs(min(min(rough_disparity(low_y:up_y,:)))+offset_pix);
+    max_disparity =  500; %abs(max(max(rough_disparity(low_y:up_y,:)))+offset_pix);
+    min_disparity = 200; %abs(min(min(rough_disparity(low_y:up_y,:)))+offset_pix);
     
     % Über jedes Pixel der Zeile von Bild1 wird Box extrahiert
     for i = 1:length(Mpt1)
@@ -69,23 +73,23 @@ for zeile = (border_dist+1):1:(size_y-border_dist-1)
     % Über jedes Pixel der Zeile von Bild1 wird Box extrahiert
     for i = 1:length(Mpt2)
         % Bildausschnitt extrahieren
-        boxes_img2(:,i) = reshape(img2(low_y:up_y,low_x(i):up_x(i)),[window_length_squared,1])...
-            -mean(mean(img2(low_y:up_y,low_x(i):up_x(i))));
+        boxes_img2(:,i) = reshape(img2(low2_y:up2_y,low2_x(i):up2_x(i)),[window_length_squared,1])...
+            -mean(mean(img2(low2_y:up2_y,low2_x(i):up2_x(i))));
         sigma_box = sqrt(1/(numel(boxes_img2(:,i))-1)*trace((boxes_img2(:,i))'*(boxes_img2(:,i))));
         norm_box_img2(:,i) = 1/sigma_box*(boxes_img2(:,i));
     end
     
     for i = 1:1:length(Mpt1)
-        NCC = 1/(window_length_squared-1)*norm_box_img1(:,i)'*norm_box_img2;
-        [val, idx] = sort(NCC,'descend','MissingPlacement','last');
-        idx_max = ceil(mean(idx(val == max(val))));
+        NCC = 1/(window_length_squared-1)*norm_box_img1(:,i)'...
+            *norm_box_img2(:,max(1,i-min_disparity):min(length(Mpt2),i+max_disparity));
+%         idx_max = ceil(mean(idx(val == max(val))));
+              [val, idx] = sort(NCC,'descend','MissingPlacement','last');
+        idx_max = min(idx(1)+max(1,i-min_disparity),length(Mpt2_off));%
         if(~isempty(idx) & ~isnan(idx_max) & val(1)>min_corr)
-            new_disparity = Mpt1(i)- Mpt2(idx_max)+offset_pix;%max(min(Mpt1(i)- Mpt2(idx_max)+offset_pix,500),50);
-            disparity_map_L(zeile,i)= new_disparity;
+            new_disparity = max(Mpt1(i)- Mpt2_off(idx_max),0);%max(min(Mpt1(i)- Mpt2(idx_max)+offset_pix,500),50);
+            disparity_map_L(zeile,Mpt1(i))= new_disparity;
         end
     end
-    
-   disp(zeile);
 end
 disparity_map = disparity_map_L;%0.5*(disparity_map_R+disparity_map_L);
 end
