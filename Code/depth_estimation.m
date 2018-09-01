@@ -2,7 +2,7 @@ function depth_map = ...
     depth_estimation(img1_rectified,img2_rectified,K,T,offset_x_pixel,...
     d_cut_up,d_cut_down,min_disparity,max_disparity,varargin)
 %DEPTH_MAP 
-    window_length = 3;
+    window_length = 9;
     % Minimale und maximale Disparität wurde über robuste Korrspondenzen
     % ermittelt. dist_safety legt fest, um wie viele Pixel die tatsächliche
     % min./max. Disparität von den ermittelten Werten abweichen darf
