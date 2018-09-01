@@ -15,12 +15,14 @@ function depth_map = ...
 
 for i = 2:-1:2
     %downsampling of images
-    [img1_dwn, img2_dwn,odd_even_xy] = downsample(img1_rectified,img2_rectified,i);
+    [img1_dwn,odd_even_xy1] = downsample(img1_rectified,i);
+    [img2_dwn,odd_even_xy2] = downsample(img2_rectified,i);
+
     %NCC disparity map generation
     depth_map_dwn = 1./disparity_estimation(img1_dwn,img2_dwn,...
     round(interv_search_left/(2^i)),round(interv_search_right/(2^i)),...
     offset_x_pixel/(2^i),window_length);
-    depth_map_up(:,:,i) = upsample(1/(2^i)*depth_map_dwn,i,odd_even_xy);
+    depth_map_up(:,:,i) = upsample(1/(2^i)*depth_map_dwn,i,odd_even_xy1);
     figure
     surf(depth_map_up(:,:,i),'LineStyle','none')
     view(0,-90);

@@ -16,14 +16,16 @@ IGray2_c = gain_offset_correction_cdf(IGray2);
 %% Bilateralte Filterung
 % Kanten sollen sich gut von homogenen FlÃ¤chen abheben kÃ¶nnen
 %downsample
-[IGray1_c, IGray2_c, odd_even] = downsample(IGray1_c,IGray2_c,1);
+[IGray1_c, odd_even1] = downsample(IGray1_c,1);
+[IGray2_c, odd_even2] = downsample(IGray2_c,1);
+
 
 IGray1_bf = uint8(bfltGray(double(IGray1_c),12,100,15));
 IGray2_bf = uint8(bfltGray(double(IGray2_c),12,100,15));
 
 %upsample
-[IGray1_bf] = upsample(IGray1_bf,1,odd_even);
-[IGray2_bf] = upsample(IGray2_bf,1,odd_even);
+[IGray1_bf] = upsample(IGray1_bf,1,odd_even1);
+[IGray2_bf] = upsample(IGray2_bf,1,odd_even2);
 
 
 %% Harris-Merkmale berechnen
@@ -89,7 +91,7 @@ disp('-------------rectification--------------')
 % imshow(img1_rectified_full)
 % % save('zw_R_rect','R_rect');
 % % save('comp_good')
-% save('comp_28_08')
+save('comp_01_09')
 % load('comp_28_08');
 
 % für RGB-Kanäle
