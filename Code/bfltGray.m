@@ -1,5 +1,11 @@
 % Implements bilateral filtering for grayscale images.
 function B = bfltGray(A,w,sigma_d,sigma_r)
+% Quelle: https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/submissions/12191/versions/1/previews/Bilateral%20Filtering/bfilter2.m/index.html
+% A: grayscale image, double precision matrix of size NxMx1 with normalized values in the closed interval [0,1];
+% w: half-size of the Gaussian bilateral filter window,
+% sigma: standard diviation of the bilateral filter; 
+%   sigma_d: spatial-domain standard deviation,
+%   sigma_r: intensity-domain standard deviation
 
 % Pre-compute Gaussian distance weights.
 [X,Y] = meshgrid(-w:w,-w:w);
