@@ -121,12 +121,6 @@ else
         %         K,T,R,p,min_y_full,max_y_full);
     end
     
-    figure
-    imshow(virtual_view_img)
-    
-    figure
-    imshow(virtual_view_img_b)
-    
     
     %% Ausgabe des Free-Viewpoint Bildes
     output_image = virtual_view_img;
