@@ -1,8 +1,8 @@
 function depth_map = ...
-    depth_estimation(img1_rectified,img2_rectified,K,T,offset_x_pixel,...
-    d_cut_up,d_cut_down,min_disparity,max_disparity,varargin)
+    depth_estimation(img1_rectified,img2_rectified,offset_x_pixel,...
+    d_cut_up,d_cut_down,min_disparity,max_disparity,L_R_base,varargin)
 %DEPTH_MAP 
-    window_length = 15;
+    window_length = 9;
     % Minimale und maximale Disparität wurde über robuste Korrspondenzen
     % ermittelt. dist_safety legt fest, um wie viele Pixel die tatsächliche
     % min./max. Disparität von den ermittelten Werten abweichen darf
@@ -13,20 +13,49 @@ function depth_map = ...
     interv_search_left = -(max_disparity - offset_x_pixel) - dist_safety;
     interv_search_right = -(min_disparity - offset_x_pixel) + dist_safety;
 
-for i = 1:-1:1
+for i = 2:-1:2
     %downsampling of images
-    [img1_dwn,odd_even_xy1] = downsample(img1_rectified,i);
-    [img2_dwn,odd_even_xy2] = downsample(img2_rectified,i);
+    [img1_dwn, odd_even_xy1] = downsample(img1_rectified,i,'no');
+    [img2_dwn, odd_even_xy2] = downsample(img2_rectified,i,'no');
 
-    %NCC disparity map generation
-    depth_map_dwn = 1./disparity_estimation(img1_dwn,img2_dwn,...
+    VZ = 1;
+    if strcmp(L_R_base,'R_base')
+        img = img1_dwn;
+        img1_dwn = img2_dwn;
+        img2_dwn = img;
+        VZ = -1;
+        interv_search_left = VZ*interv_search_right;
+        interv_search_right = VZ*interv_search_left;
+    end
+    
+    disp_map = disparity_estimation(img1_dwn,img2_dwn,...
     round(interv_search_left/(2^i)),round(interv_search_right/(2^i)),...
     offset_x_pixel/(2^i),window_length);
-    depth_map_up(:,:,i) = upsample(1/(2^i)*depth_map_dwn,i,odd_even_xy1);
+
+%     disp_surf(:,:,1) = disp_map;
 %     figure
-%     surf(depth_map_up(:,:,i),'LineStyle','none')
+%     surf(disp_surf(:,:,1),'LineStyle','none')
 %     view(0,-90);
-    depth_map = depth_map_up(:,:,i);%min(depth_map_up,depth_map_up(:,:,i));
+
+%     disp_map_filtered = continuity_filter(disp_map,3,7);
+    disp_map_filtered = disp_map;
+%     disp_surf(:,:,1) = disp_map_filtered;
+%     figure
+%     surf(disp_surf(:,:,1),'LineStyle','none')
+%     view(0,-90);
+    
+    
+    %NCC disparity map generation
+    depth_map_dwn = 1./disp_map_filtered;
+    if strcmp(L_R_base,'R_base')
+    depth_map_up(:,:,1) = upsample(1/(2^i)*depth_map_dwn,i,odd_even_xy2);
+    else
+        depth_map_up(:,:,1) = upsample(1/(2^i)*depth_map_dwn,i,odd_even_xy1);
+    end
+%     figure
+%     surf(depth_map_up(:,:,1),'LineStyle','none')
+%     view(0,-90);
+    depth_map = depth_map_up(:,:,1);%min(depth_map_up,depth_map_up(:,:,i));
 end
 
 % Depth Map wurde wegen der Größe des Fensters zur SAD Berechnung an den
