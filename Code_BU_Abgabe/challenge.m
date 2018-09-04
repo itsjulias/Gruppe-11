@@ -6,7 +6,7 @@ clear all;
 group_number = 11;
 
 % Groupmembers:
-members = {'Julia Stroebel','Oliver Doege','Andre Thommessen','Tim Janßen',...
+members = {'Julia Stroebel','Oliver Doege','Andre Thommessen','Tim Janssen',...
            'Sebastian Huegler'};
 
 % Email-Adress (from Moodle!):
@@ -19,8 +19,8 @@ mail = {'sebastian.huegler@tum.de',...
 
 
 %% Load images
-img1 = imread([pwd '/img/L2.jpg']);
-img2 = imread([pwd '/img/R2.jpg']);
+img1 = imread([pwd '/img/L2.JPG']);
+img2 = imread([pwd '/img/R2.JPG']);
 
 %% Free Viewpoint Rendering
 % start execution timer -> tic;
@@ -35,3 +35,4 @@ elapsed_time = toc;
 % Display Virtual View
 figure
 imshow(img_viewpoint)
+
