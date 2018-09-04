@@ -3,9 +3,9 @@ function [output_image]  = free_viewpoint(image1, image2, p)
 % real images. The output image has the same size as the input images.
 devMode =false;
 if(p == 1)
-    out_put_image = image2;
+    output_image = image2;
 elseif(p==0)
-    out_put_image = image1;
+    output_image = image1;
     
 else
     %% Algorithmus
