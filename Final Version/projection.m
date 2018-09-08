@@ -2,15 +2,15 @@ function [virtual_view_img,img_rectified_new,ScatInterp_init] = projection(IGray
                         img_rectified_L_full,img_rectified_R_full,depth_maps,K,R,p,R_rect,...
                         offset_x,min_corners_L_y,ScatInterp)
 
-%PROJECTION Berechnet neue rektifizierte Zwischenansicht und f¸hrt
-%anschlieﬂend Derektifizierung durch
+%PROJECTION Berechnet neue rektifizierte Zwischenansicht und f√ºhrt
+%anschlie√üend Derektifizierung durch
 % IGray_L = Linkes Graubild
 % img_rectified_L = Linkes rektifiziertes Bild
 % depth_map = Tiefenkarte (in Pixeleinheiten)
 % K = Kalibrierungsmatrix
-% T_x zwischen 0 (linke Ansicht) und -1 (rechte Ansicht) w‰hlen. (siehe
+% T_x zwischen 0 (linke Ansicht) und -1 (rechte Ansicht) w√§hlen. (siehe
 % new_rectified_view.m)
-% R_rect = Zuvor berechnete Rotationsmatrix f¸r die Rektifizierung
+% R_rect = Zuvor berechnete Rotationsmatrix f√ºr die Rektifizierung
 % min_x_pixel_rec = Minimale unkalibrierte x-Weltkoordinate der
 % rektifizierten Zwischenansicht. (siehe new_rectified_view.m)
 % max_x_pixel_rec = Maximale unkalibrierte x-Weltkoordinate der
@@ -25,7 +25,7 @@ for i=1:2
     if i == 1
          T_x(i) = -p;
 
-         % Bestimme Rotation und Translation f¸r Zwischenansicht
+         % Bestimme Rotation und Translation f√ºr Zwischenansicht
          theta_deg_fv =  k*theta_deg;
          psi_deg_fv  = k*psi_deg;
          phi_deg_fv = k*phi_deg;
@@ -34,14 +34,14 @@ for i=1:2
         % Umwandlung der derektifizierten Pixelkoordinaten x in rektifizierte
         % Pixelkoordinaten x':
         % x' = K*R_rect'*R_v*inv(K)*x
-        % ("Derektifizierte Ansicht zun‰chst um R_rect nach rechts drehen und
-        % anschlieﬂend mit R_v um Winkel alpha nach links drehen")
+        % ("Derektifizierte Ansicht zun√§chst um R_rect nach rechts drehen und
+        % anschlie√üend mit R_v um Winkel alpha nach links drehen")
         % Bzw. inverse Transformation:
         % Umwandlung der rektifizierten Pixelkoordinaten x' in derektifizierte
         % Pixelkoordinaten x:
         % x = K*R_rect*R_v'*inv(K)*x'
-        % ("Rektifizierte Ansicht zun‰chst um R_rect nach links drehen und
-        % anschlieﬂend mit R_v um Winkel alpha nach rechts drehen")
+        % ("Rektifizierte Ansicht zun√§chst um R_rect nach links drehen und
+        % anschlie√üend mit R_v um Winkel alpha nach rechts drehen")
         T_rec = K*R_rect*R_v'*inv(K);
 
         % Berechnung & Drehung der Bildmitte, so dass Bildebenen parallel zu
@@ -53,7 +53,7 @@ for i=1:2
         center_rec = T_rec*center;
 
         % Horizontaler/Vertikaler Versatz der begradigten Bilder soll nun gleich
-        % sein, bzw. Bilder sollen horizontal/vertikal auf gleicher Hˆhe liegen.
+        % sein, bzw. Bilder sollen horizontal/vertikal auf gleicher H√∂he liegen.
         d_rec = center(1:2) - center_rec(1:2)/center_rec(3);
         % Anpassen der Kalibrierungsmatrix
         K_rec = K;
@@ -61,7 +61,7 @@ for i=1:2
         K_rec(1,3) = K(1,3)+d_rec(1);
         % Anpassen des Ursprungs in y-Richtung
         K_rec(2,3) = K(2,3)+d_rec(2);
-        % Neue Transformation f¸r die Rektifizierung berechnen.
+        % Neue Transformation f√ºr die Rektifizierung berechnen.
         T_rec = K_rec*R_rect*R_v'*inv(K);
 
         % Bestimme wo die Ecken und Mittelpunkt der derektifizierten Ansicht in der
@@ -76,18 +76,15 @@ for i=1:2
     
         img_rectified_full{i} = img_rectified_L_full;
     else
-%         T_x(i) = k;
         T_x(i) = -k;
         img_rectified_full{i} = img_rectified_R_full;
     end
 
     % Ansicht wird nach rechts verschoben. Diese Verschiebung nach rechts
-    % bedeutet, dass der neue Pixelbereich, f¸r den die neuen Intensit‰ten zu
+    % bedeutet, dass der neue Pixelbereich, f√ºr den die neuen Intensit√§ten zu
     % berechnen sind, nach links verschoben wird.
     if i == 1
         min_x_v_rec(i) = round(-p*offset_x);
-%     else
-%         min_x_v_rec(i) = round(k*offset_x);
     else
         min_x_v_rec(i) = round(-k*offset_x);
     end
@@ -103,7 +100,7 @@ for i=1:2
 end
 
 if nargin < 11
-    % Es sind keine ScatteredInterpolants ¸bergeben worden. Sie m¸ssen neu
+    % Es sind keine ScatteredInterpolants √ºbergeben worden. Sie m√ºssen neu
     % erstellt werden.
     ScatInterp = [];
 end
@@ -111,7 +108,7 @@ end
     [img_rectified_new,ScatInterp_init] = new_rectified_view(img_rectified_full,depth_maps,T_x,...
         min_x_v_rec,max_x_v_rec,min_y_v_rec,max_y_v_rec,cut,p,ScatInterp);
 
-    % Meshgrid, das Pixelkoordinaten der derektifizierten Ansicht enth‰lt in
+    % Meshgrid, das Pixelkoordinaten der derektifizierten Ansicht enth√§lt in
     % rektifizierte Pixelkoodrinaten transformieren.
     [pixel_x, pixel_y] = meshgrid(1:size_x,1:size_y);
     % Entsprechende rektifizierte Pixelkoordinaten berechnen.
@@ -122,8 +119,8 @@ end
 
     % Interpolation
     v = double(img_rectified_new);
-    % Um Interpolant zu bestimmen, bekannte St¸tzstellen und Intensit‰ten
-    % ¸bergeben.
+    % Um Interpolant zu bestimmen, bekannte St√ºtzstellen und Intensit√§ten
+    % √ºbergeben.
     min_corners_x = min(corners_rec(1,:));
     min_corners_y = min(corners_rec(2,:));
     F = griddedInterpolant({1+min_corners_x:size(img_rectified_new,2)+min_corners_x,...
