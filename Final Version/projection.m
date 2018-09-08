@@ -79,10 +79,11 @@ for i=1:2
         T_x(i) = -k;
         img_rectified_full{i} = img_rectified_R_full;
     end
-
-    % Ansicht wird nach rechts verschoben. Diese Verschiebung nach rechts
-    % bedeutet, dass der neue Pixelbereich, für den die neuen Intensitäten zu
-    % berechnen sind, nach links verschoben wird.
+    
+% Linke und rechte rektifizierte Ansicht sind i.A. versetzt. Wird die eine
+% Ansicht in die andere umgerechnet muss dieser Versatz (offset_x)
+% berücksichtigt werden. Für die Zwischenansicht berechnet sich der Versatz
+% anteilig mit p bzw. 1-p.
     if i == 1
         min_x_v_rec(i) = round(-p*offset_x);
     else
