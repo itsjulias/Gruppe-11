@@ -1,164 +1,133 @@
-function [new_rectified_img,ScatInterp_init] = new_rectified_view(I1_rec,depth_maps,T_x,min_x,max_x,min_y,max_y,cut,p,ScatInterp)
-%NEW_RECTIFIED_VIEW Gibt rektifizierte Zwischenansicht zur¸ck
-% -----------------------------------------------------------------------
-% !!! T_x zwischen 0 (linke Ansicht) und -1 (rechte Ansicht) w‰hlen !!!
-% -----------------------------------------------------------------------
-% min_x und max_x bestimmen die Pixelgrenzen f¸r die die neue Ansicht
-% berechnet werden soll.
+function [virtual_view_img,img_rectified_new,ScatInterp_init] = projection(IGray_L,...
+                        img_rectified_L_full,img_rectified_R_full,depth_maps,K,R,p,R_rect,...
+                        offset_x,min_corners_L_y,ScatInterp)
 
-% P2 = R*P1+T mit R=I und P1=lamda1*x1
-% lambda2*x2 = lambda1*x1+T => lambda1 und lambda2 sind hier in diesem Fall
-% identisch. (Verwendung von rektifizierten Bildern bzw. eukl. Bewegung
-% l‰sst z-Komponente unver‰ndert, x1 und x2 auf z=1 normiert)
-% Daher gilt: lambda1 = lambda2 = z-Komponente der Punkte im Raum
-% Letzeres ist gegeben durch die Tiefenkarte/depth_map (Achtung Tiefenkarte
-% ist in Pixeleinheiten)
+%PROJECTION Berechnet neue rektifizierte Zwischenansicht und f√ºhrt
+%anschlie√üend Derektifizierung durch
+% IGray_L = Linkes Graubild
+% img_rectified_L = Linkes rektifiziertes Bild
+% depth_map = Tiefenkarte (in Pixeleinheiten)
+% K = Kalibrierungsmatrix
+% T_x zwischen 0 (linke Ansicht) und -1 (rechte Ansicht) w√§hlen. (siehe
+% new_rectified_view.m)
+% R_rect = Zuvor berechnete Rotationsmatrix f√ºr die Rektifizierung
+% min_x_pixel_rec = Minimale unkalibrierte x-Weltkoordinate der
+% rektifizierten Zwischenansicht. (siehe new_rectified_view.m)
+% max_x_pixel_rec = Maximale unkalibrierte x-Weltkoordinate der
+% rektifizierten Zwischenansicht. (siehe new_rectified_view.m)
+% alpha = Winkel, um den die Ansicht vom linken Bild ausgehend um die
+% y-Achse gedreht wurde.
 
-% Analoge Rechnung f¸r Pixelkoordinaten:
-% => lambda2*x2_pixel = lambda1*K*R*inv(K)*x1_pixel+K*T
-% mit K*R*inv(K) = I und K*T = T_pixel
-% => lambda2*x2_pixel = lambda1*x1_pixel+T_pixel <= Gleichung(1)
+[theta_deg, psi_deg, phi_deg] = euler_angles(R);
 
-% Nur T_x nˆtig, da nur Verschiebung in x-Richtung (T = [T_x; 0; 0])
-% T_x soll zwischen 0 und -1 liegen
+for i=1:2
+    k = p-i+1;
+    if i == 1
+         T_x(i) = -p;
 
+         % Bestimme Rotation und Translation f√ºr Zwischenansicht
+         theta_deg_fv =  k*theta_deg;
+         psi_deg_fv  = k*psi_deg;
+         phi_deg_fv = k*phi_deg;
+         R_v = euler_rotation(phi_deg_fv, theta_deg_fv, psi_deg_fv);
 
-if isempty(ScatInterp)
-    for i = 1:2
-        [OLD_pixel_x,OLD_pixel_y] = meshgrid(1:size(I1_rec{i},2),1:size(I1_rec{i},1));
-        % Tiefe wurde bisher bestimmt als: depth = 1/(x1_pixel-x2_pixel). Der erste
-        % Eintrag der Kalibrierungsmatrix K(1,1) entspricht dem Umrechnungsfaktor
-        % zwischen Abst‰nden der x-Weltkoordinaten und x-Pixelkoordinaten:
-        % d_x_pixel = K(1,1)*d_x_welt
-        % Daraus folgt f¸r die "echte" Tiefe: depth = K(1,1)/(x1_pixel-x2_pixel)
-        % Daraus folgt:
-        % lambda1 = lambda2 = lambda = z-Komponente der Punkte im Raum
-        %         = K(1,1)*depth_map'
-        % Umformen von Gleichung(1) ergibt die neuen Pixelkoordinaten:
-        % x2_pixel = x1_pixel + T_pixel/lambda
-        % => x2_pixel = x1_pixel + (K(1,1)*T_x) / ((K(1,1))*depth_map)
-        %             = x1_pixel + T_x / depth_map
-        NEW_pixel_x{i} = OLD_pixel_x + T_x(i)./depth_maps{i};
-        % T_y = 0 und T_z = 0, daraus folgt, dass die y- und z-Pixelkoordinaten
-        % unver‰ndert bleiben. (z-Komponente hat sowohl in homogenen
-        % Bildkoordinaten als auch homogenen Pixelkoordinaten den Wert 1.)
-        
-        if i == 2
-            % Justieren der Pixelkoordinaten => Pixelkoordinaten von rechtem
-            % Ausgangsbild auf jene vom linken Ausgangsbild umrechnen.
-            NEW_pixel_x{2} = NEW_pixel_x{2}+min_x(1)-min_x(2);
-        end
-        
-        % Valide Pixel bestimmen
-        p_valid{i} = isfinite(NEW_pixel_x{i}) & isfinite(depth_maps{i})...
-            & NEW_pixel_x{i} >= min_x(1) & NEW_pixel_x{i} <= max_x(1);
-        NEW_pixel_x{i} = round(NEW_pixel_x{i}(p_valid{i}));
-        NEW_pixel_y{i} = round(OLD_pixel_y(p_valid{i}));
-        v{i} = double(I1_rec{i}(p_valid{i}));
-        
-        if i == 2
-            % Justieren der Pixelkoordinaten => Pixelkoordinaten von rechtem
-            % Ausgangsbild auf jene vom linken Ausgangsbild umrechnen.
-            NEW_pixel_y{2} = round(NEW_pixel_y{2}-min_y(1)+min_y(2));
-        end
-        
-        
-        % Doppelte Eintr‰ge (Eintr‰ge mit gleichen Pixelkoordinaten wegen
-        % ungenauer Depth Map) jeweils mitteln.
-        hol_grid{i} = [NEW_pixel_x{i},NEW_pixel_y{i}];
-        % Bestimme Reihenindizes der validen Pixelkoordinaten (ohne Dopplungen)
-        [U_pixel_xy,idx_firstU{i},~] = unique(hol_grid{i},'rows');
-        % Mittelwerte bilden
-        % accumarray Pixelkoordinaten ¸bergeben mit Ursprung (1,1)
-        konst_x{i} = -min(NEW_pixel_x{i})+1;
-        konst_y{i} = -min(NEW_pixel_y{i})+1;
-        mean_grid = accumarray([hol_grid{i}(:,1)+konst_x{i},hol_grid{i}(:,2)+konst_y{i}],v{i},[],@mean);
-        NEW_pixel_x{i} = U_pixel_xy(:,1);
-        NEW_pixel_y{i} = U_pixel_xy(:,2);
-        v{i} = mean_grid(sub2ind(size(mean_grid),...
-            hol_grid{i}(idx_firstU{i},1)+konst_x{i},hol_grid{i}(idx_firstU{i},2)+konst_y{i}));
+        % Umwandlung der derektifizierten Pixelkoordinaten x in rektifizierte
+        % Pixelkoordinaten x':
+        % x' = K*R_rect'*R_v*inv(K)*x
+        % ("Derektifizierte Ansicht zun√§chst um R_rect nach rechts drehen und
+        % anschlie√üend mit R_v um Winkel alpha nach links drehen")
+        % Bzw. inverse Transformation:
+        % Umwandlung der rektifizierten Pixelkoordinaten x' in derektifizierte
+        % Pixelkoordinaten x:
+        % x = K*R_rect*R_v'*inv(K)*x'
+        % ("Rektifizierte Ansicht zun√§chst um R_rect nach links drehen und
+        % anschlie√üend mit R_v um Winkel alpha nach rechts drehen")
+        T_rec = K*R_rect*R_v'*inv(K);
+
+        % Berechnung & Drehung der Bildmitte, so dass Bildebenen parallel zu
+        % Translationsvektor liegen
+        [size_y, size_x] = size(IGray_L);
+        center_y = round(size_y/2);
+        center_x = round(size_x/2);
+        center = [center_x; center_y; 1];
+        center_rec = T_rec*center;
+
+        % Horizontaler/Vertikaler Versatz der begradigten Bilder soll nun gleich
+        % sein, bzw. Bilder sollen horizontal/vertikal auf gleicher H√∂he liegen.
+        d_rec = center(1:2) - center_rec(1:2)/center_rec(3);
+        % Anpassen der Kalibrierungsmatrix
+        K_rec = K;
+        % Anpassen des Ursprungs in x-Richtung
+        K_rec(1,3) = K(1,3)+d_rec(1);
+        % Anpassen des Ursprungs in y-Richtung
+        K_rec(2,3) = K(2,3)+d_rec(2);
+        % Neue Transformation f√ºr die Rektifizierung berechnen.
+        T_rec = K_rec*R_rect*R_v'*inv(K);
+
+        % Bestimme wo die Ecken und Mittelpunkt der derektifizierten Ansicht in der
+        % rektifizierten Ansicht liegen. 
+        corners_rec = T_rec*[0, size_x,size_x, 0;
+                        size_y, size_y, 0, 0;
+                        ones(1,4)];
+        center_rec = T_rec*center;
+        % Normalisierung der z-Komponente auf eins.
+        center_rec = center_rec/center_rec(3);
+        corners_rec = corners_rec./corners_rec(3,:);
+    
+        img_rectified_full{i} = img_rectified_L_full;
+    else
+%         T_x(i) = k;
+        T_x(i) = -k;
+        img_rectified_full{i} = img_rectified_R_full;
     end
-    
-    
-    % Sind Informationen aus beiden Bildern f¸r das selbe Pixel erh‰ltlich werden die
-    % entsprechenden Intensit‰ten mit p bzw. (1-p) gewichtet, sodass die
-    % Intensit‰ten der jeweils n‰here Ansicht st‰rker gewichtet werden.
-    [log_twice,idx_2] = ismember([NEW_pixel_x{1},NEW_pixel_y{1}],...
-        [NEW_pixel_x{2},NEW_pixel_y{2}],'rows');
-    for k = 1:length(idx_2)
-        % Gewichtung mit p, wenn Pixelkoordinate in beiden Bildern
-        % vorhanden.
-        if idx_2(k) ~= 0 
-            v{2}(idx_2(k)) = p*v{2}(idx_2(k))+(1-p)*v{1}(k);
-        end
+
+    % Ansicht wird nach rechts verschoben. Diese Verschiebung nach rechts
+    % bedeutet, dass der neue Pixelbereich, f√ºr den die neuen Intensit√§ten zu
+    % berechnen sind, nach links verschoben wird.
+    if i == 1
+        min_x_v_rec(i) = round(-p*offset_x);
+    else
+        min_x_v_rec(i) = round(-k*offset_x);
     end
-           
+    max_x_v_rec(i) = min_x_v_rec(i)+size(img_rectified_full{i},2);
     
-    % Entsprechende Daten in v{1} lˆschen, da nun in v{2}
-    % enthalten/ber¸cksichtigt.
-    NEW_pixel_x{1}(log_twice) = [];
-    NEW_pixel_y{1}(log_twice) = [];
-    v{1}(log_twice) = [];
+    off_y = center_rec(2)-size(img_rectified_full{i},1)/2; 
+    min_y_v_rec(i) = round(min(corners_rec(2,:))+off_y);
+    max_y_v_rec(i) = round(max(corners_rec(2,:))+off_y);
     
-    
-    % Verwende Informationen aus beiden Bilder, sodass Bereiche, die aus
-    % der linken Ansicht nicht sichtbar sind durch die rechte Ansicht
-    % bestimmt werden und anders herum.
-    NEW_pixel_x = [NEW_pixel_x{1};NEW_pixel_x{2}];
-    NEW_pixel_y = [NEW_pixel_y{1};NEW_pixel_y{2}];
-    v = [v{1};v{2}];
-    
-    disp('Creating Scattered Interpolant');
-
-     F = scatteredInterpolant(NEW_pixel_x,NEW_pixel_y,v,'linear','none');
-     new_rectified_img = uint8(F({min_x(1):max_x(1),...
-         -cut:max_y(1)-min_y(1)-cut}))';
-
-     disp('Scattered Interpolant created');
-    
-    % Daten speichern um n‰chsten Farbkanal schneller berechnen zu kˆnnen.
-    for i = 1:2
-    ScatInterp_init{i} = struct;
-    ScatInterp_init{i}.p_valid = p_valid{i};
-    ScatInterp_init{i}.hol_grid = hol_grid{i};
-    ScatInterp_init{i}.konst_x = konst_x{i};
-    ScatInterp_init{i}.konst_y = konst_y{i};
-    ScatInterp_init{i}.idx_firstU = idx_firstU{i};
+    if i == 1
+        cut = min_corners_L_y-min(corners_rec(2,:));
     end
-    ScatInterp_init{1}.idx_2 = idx_2;
-    ScatInterp_init{1}.log_twice = log_twice;
-    ScatInterp_init{3} = F;
-else
-    % Scattered Interpolant wurde bereits erstellt (f¸r anderen Farbkanal)
-    % => Berechne nur die Intensit‰ten neu
-    for i = 1:2
-        % wie oben
-        v{i} = double(I1_rec{i}(ScatInterp{i}.p_valid));
-        mean_grid = accumarray([ScatInterp{i}.hol_grid(:,1)+ScatInterp{i}.konst_x,...
-            ScatInterp{i}.hol_grid(:,2)+ScatInterp{i}.konst_y],v{i},[],@mean);
-        v{i} = mean_grid(sub2ind(size(mean_grid),...
-           ScatInterp{i}.hol_grid(ScatInterp{i}.idx_firstU,1)+ScatInterp{i}.konst_x,...
-           ScatInterp{i}.hol_grid(ScatInterp{i}.idx_firstU,2)+ScatInterp{i}.konst_y));
-    end
-        for k = 1:length(ScatInterp{1}.idx_2)
-            % Gewichtung mit p, wenn Pixelkoordinate in beiden Bildern
-            % vorhanden.
-            if ScatInterp{1}.idx_2(k) ~= 0 
-                v{2}(ScatInterp{1}.idx_2(k)) = p*v{2}(ScatInterp{1}.idx_2(k))+(1-p)*v{1}(k);
-            end
-        end
-        v{1}(ScatInterp{1}.log_twice) = [];
-        
-        F = ScatInterp{3};
-        F.Values = [v{1};v{2}];
+end
 
-        disp('Changing values of Scattered Interpolant');
-        
-        new_rectified_img = uint8(F({min_x(1):max_x(1),...
-             -cut:max_y(1)-min_y(1)-cut}))';
+if nargin < 11
+    % Es sind keine ScatteredInterpolants √ºbergeben worden. Sie m√ºssen neu
+    % erstellt werden.
+    ScatInterp = [];
+end
+    % Bestimme neue rektifizierte Zwischenansicht
+    [img_rectified_new,ScatInterp_init] = new_rectified_view(img_rectified_full,depth_maps,T_x,...
+        min_x_v_rec,max_x_v_rec,min_y_v_rec,max_y_v_rec,cut,p,ScatInterp);
 
-         disp('Values of Scattered Interpolant changed');
-        ScatInterp_init = {};
+    % Meshgrid, das Pixelkoordinaten der derektifizierten Ansicht enth√§lt in
+    % rektifizierte Pixelkoodrinaten transformieren.
+    [pixel_x, pixel_y] = meshgrid(1:size_x,1:size_y);
+    % Entsprechende rektifizierte Pixelkoordinaten berechnen.
+    % Normierung auf z = 1 => Dazu als erstes z-Komponente berechnen.
+    z_rec = T_rec(3,1)*pixel_x+T_rec(3,2)*pixel_y+T_rec(3,3);
+    pixel_x_rec = (T_rec(1,1)*pixel_x+T_rec(1,2)*pixel_y+T_rec(1,3)) ./ z_rec;
+    pixel_y_rec = (T_rec(2,1)*pixel_x+T_rec(2,2)*pixel_y+T_rec(2,3)) ./ z_rec;
+
+    % Interpolation
+    v = double(img_rectified_new);
+    % Um Interpolant zu bestimmen, bekannte St√ºtzstellen und Intensit√§ten
+    % √ºbergeben.
+    min_corners_x = min(corners_rec(1,:));
+    min_corners_y = min(corners_rec(2,:));
+    F = griddedInterpolant({1+min_corners_x:size(img_rectified_new,2)+min_corners_x,...
+            1+min_corners_y:size(img_rectified_new,1)+min_corners_y},v','linear'); % ,'none'
+    virtual_view_img = uint8(F(pixel_x_rec(:),pixel_y_rec(:)))';
+    virtual_view_img = reshape(virtual_view_img,[size_y, size_x]);
     
 
 end
