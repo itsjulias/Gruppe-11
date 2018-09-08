@@ -13,13 +13,13 @@ else
     IGray1 = rgb_to_gray(image1);
     IGray2 = rgb_to_gray(image2);
     
-    %% Intensitäts und Beleuchtungskorrektur
+    %% IntensitÃ¤ts und Beleuchtungskorrektur
     disp('-------------BIAS GAIN OFFSET CORRECTION-----------')
     IGray1_c = gain_offset_correction_cdf(IGray1);
     IGray2_c = gain_offset_correction_cdf(IGray2);
     
     %% Bilateralte Filterung
-    % Kanten sollen sich gut von homogenen Flächen abheben können
+    % Kanten sollen sich gut von homogenen FlÃ¤chen abheben kÃ¶nnen
     %downsample
     [IGray1_c, odd_even1] = downsample(IGray1_c,1);
     [IGray2_c, odd_even2] = downsample(IGray2_c,1);
@@ -34,7 +34,6 @@ else
     
     %% Harris-Merkmale berechnen
     disp('-------------GETTING FEATURE POINTS--------------')
-    % Robuste Einstellungen 'segment_length',15,'k',0.12,'min_dist',10,'N',20
     Merkmale1 = harris_detektor(IGray1_bf,'segment_length',15,'k',0.15,'min_dist',20,'N',20,'do_plot',devMode);
     Merkmale2 = harris_detektor(IGray2_bf,'segment_length',15,'k',0.15,'min_dist',20,'N',20,'do_plot',devMode);
     
@@ -81,8 +80,6 @@ else
     [T_cell, R_cell,T,R, d_cell, x1, x2] = ...
         rekonstruktion(T1, T2, R1, R2, Korrespondenzen_robust, K);
     
-    save('zw_for_rec_R')
-load('zw_for_rec_R')
     %% Bildrektifizierungsalgorithmus
     disp('-------------RECTIFICATION--------------')
     
@@ -98,8 +95,6 @@ load('zw_for_rec_R')
             rectification(image1(:,:,i),image2(:,:,i),K,T,R);
     end
     
-% save('zw_for_disp_R')
-%      load('zw_for_disp_R')
 
     %% Disparitaetsermittlung
     disp('---------DEPTH ESTIMATION-----------')
@@ -118,8 +113,6 @@ load('zw_for_rec_R')
         d_cut_down_R,d_cut_up_R,min_disparity,max_disparity,log_NaN_L,...
         log_NaN_R,mean_disparity,'R_base');
     
-%     save('zw_for_proj_L')
-%     load('zw_for_proj_L')
 
     %% Projektion auf neues Bild
     disp('---------PROJECTION-----------')
