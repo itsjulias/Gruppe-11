@@ -62,7 +62,7 @@ if mean_disparity > 1500 % true für Bilder L1/R1
     
     %% Median Filter 
     % Homogene Flächen sollen möglichst keine Ausreißer enthalten.
-    disp_map_filtered_3 = medfilt2(disp_map_3,[5 5]);
+    disp_map_filtered_3 = medfilt2(disp_map_3,[9 9]);
 
 %     disp_surf(:,:,1) = disp_map_filtered_3;
 %     figure
@@ -116,7 +116,7 @@ if mean_disparity > 1500 % true für Bilder L1/R1
     end
 
     %% Refine
-    window_length(2) = 5;
+    window_length(2) = 17;
     % Bestimme anhand des für jedes Pixel individuell festgelegten
     % Liniensuchbereichs erneut die Disparitäten.
     disp_map_refine = refine_disp(img1_dwn,img2_dwn,hom_map,...
@@ -143,7 +143,7 @@ if mean_disparity > 1500 % true für Bilder L1/R1
 %     surf(disp_surf(:,:,1),'LineStyle','none')
 %     view(0,-90);
         
-    disp_map_filtered = continuity_filter(disp_merge,3,3);
+    disp_map_filtered = continuity_filter(disp_merge,3,9); %,3
     
 %     disp_surf = [];
 %     disp_surf(:,:,1) = disp_map_filtered;
